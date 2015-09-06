@@ -31,12 +31,6 @@ import JavaScript.Canvas
 foreign import javascript safe "resize_canvas($1,$2)"
   js_resize_canvas :: Int -> Int -> IO ()
 
-foreign import javascript safe "draw_point($1,$2)"
-  js_draw_point :: Double -> Double -> IO ()
-
-foreign import javascript safe "clear_canvas()"
-  js_clear_canvas :: IO ()
-
 foreign import javascript safe "{$($1).empty(); $($1).append($2);}"
   js_set_label :: JSString -> Double -> IO ()
 
@@ -85,14 +79,10 @@ main = runNowMaster' $ do
            * rotZ (pi/2)
            * rotY (asRadians δ)
            * rotZ (asRadians α) :: Quaternion Double
-  -- let cameraQ = ((α,δ) -> 
-  ss <- innerSizeBehavior "#area"
-  flip actimate ss $ \(w,h) -> do
+  bhvSize <- innerSizeBehavior "#area"
+  flip actimate bhvSize $ \(w,h) -> do
     js_resize_canvas w h
-  
-  -- actimate (consoleLog . show) (makeCamera <$> bhvLR <*> bhvUD)
-  
--- Draw square
+  -- Draw
   let draw zoom (w,h) cam = runCanvas "cnv" $ do
         clear
         forM_ ([-75, -65 .. 85 ] ++ [90]) $ \δ ->
@@ -111,5 +101,5 @@ main = runNowMaster' $ do
 
   actimate (\(a,b,c) -> draw a b c)
     ((,,) <$> bhvZoom
-          <*> ss
+          <*> bhvSize
           <*> (makeCamera <$> bhvLR <*> bhvUD))
