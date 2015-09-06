@@ -8,6 +8,7 @@ module Web.FRP (
     -- * FRP
   , runNowMaster'
   , actimate
+  , actimateB
   , onClickStream
   , innerSizeBehavior
   ) where
@@ -37,10 +38,16 @@ runNowMaster' now = do
   initNow void (now >> return never)
   forever $ threadDelay maxBound
 
-actimate :: Eq a => (a -> IO ()) -> Behavior a -> Now ()
+actimate :: (Eq a) => (a -> IO ()) -> Behavior a -> Now ()
 actimate fun bhv = do
   sync . fun =<< sample bhv
   callIOStream fun $ toChanges bhv
+
+actimateB :: (Eq a) => (b -> a -> IO ()) -> Behavior b -> Behavior a -> Now ()
+actimateB fun bhvB bhv = do
+  b <- sample bhvB
+  sync . fun b =<< sample bhv
+  callIOStream id $ (fun <$> bhvB) <@@> toChanges bhv
 
 -- | Stream of onclick events
 onClickStream

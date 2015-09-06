@@ -9,6 +9,11 @@ module JavaScript.Canvas (
   , height
   , fillRect
   , clearRect
+  , moveTo
+  , lineTo
+  , stroke
+  , drawLine
+  , lineWidth
   , clear
   ) where
 
@@ -20,6 +25,7 @@ import Control.FRPNow
 
 import Data.Aeson
 import Data.String
+import qualified Data.Foldable as F
 import GHCJS.Types
 import GHCJS.Foreign
 import GHCJS.Marshal
@@ -52,12 +58,31 @@ clearRect :: Double -> Double -> Double -> Double -> Canvas ()
 clearRect x y w h = Canvas $ ReaderT $ \(_,cxt) ->
   jscnv_clearRect cxt x y w h
 
+drawLine :: F.Foldable f => f (Double,Double) -> Canvas ()
+drawLine xs = case F.toList xs of
+  []  -> return ()
+  [_] -> return ()
+  ((x,y):xs) -> moveTo x y >> F.forM_ xs (uncurry lineTo) >> stroke
+
+
+
 clear :: Canvas ()
-clear = do 
-  w <- width
-  h <- height
-  clearRect 0 0 (fromIntegral w) (fromIntegral h)
-  
+clear = Canvas $ ReaderT $ \(cnv,_) -> jscnv_clear cnv
+
+lineTo :: Double -> Double -> Canvas ()
+lineTo x y = Canvas $ ReaderT $ \(_,cxt) -> jscnv_lineTo cxt x y
+
+moveTo :: Double -> Double -> Canvas ()
+moveTo x y = Canvas $ ReaderT $ \(_,cxt) -> jscnv_moveTo cxt x y
+
+lineWidth :: Double -> Canvas ()
+lineWidth w = Canvas $ ReaderT $ \(_,cxt) -> jscnv_lineWidth cxt w
+
+stroke :: Canvas ()
+stroke = Canvas $ ReaderT $ \(_,cxt) -> jscnv_stroke cxt 
+
+
+
 width :: Canvas Int
 width = Canvas $ ReaderT $ \(cnv,_) -> jscnv_width cnv
 
@@ -83,6 +108,21 @@ foreign import javascript safe "$1.fillRect($2,$3,$4,$5)"
 
 foreign import javascript safe "$1.clearRect($2,$3,$4,$5)"
   jscnv_clearRect :: JSRef Context -> Double -> Double -> Double -> Double -> IO ()
+
+foreign import javascript safe "$1.moveTo($2,$3)"
+  jscnv_moveTo :: JSRef Context -> Double -> Double -> IO ()
+
+foreign import javascript safe "$1.lineTo($2,$3)"
+  jscnv_lineTo :: JSRef Context -> Double -> Double -> IO ()
+
+foreign import javascript safe "$1.lineWidth = $2"
+  jscnv_lineWidth :: JSRef Context -> Double -> IO ()
+
+foreign import javascript safe "$1.stroke()"
+  jscnv_stroke :: JSRef Context -> IO ()
+
+foreign import javascript safe "$1.width = $1.width"
+  jscnv_clear :: JSRef CanvasTag -> IO ()
 
 foreign import javascript safe "$1.width"
   jscnv_width :: JSRef CanvasTag -> IO Int

@@ -28,7 +28,9 @@ Executable test
     bytestring,
     text,
     ghcjs-base,
+    vector,
     fixed-vector,
+    unordered-containers,
     my-vectorspace >= 0.3.0,
 -- FIXME: cabal sandbox doesn't work with add-source
 --    celestial,
