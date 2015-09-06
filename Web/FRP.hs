@@ -55,6 +55,7 @@ onClickStream selector = do
   -- Done
   return stream
 
+-- | Behaviour of value
 innerSizeBehavior
   :: JSString                   -- ^ JQuery selector
   -> Now (Behavior (Int,Int))

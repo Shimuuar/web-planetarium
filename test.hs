@@ -46,35 +46,36 @@ foreign import javascript safe "{$($1).empty(); $($1).append($2);}"
 
 adjustStream
   :: Num a
-  => a                          -- ^ Inc/decrement size
-  -> JSString                   -- ^ Decrement selector
-  -> JSString                   -- ^ Increment selector
+  => (JSString, a -> a)    -- ^ Decrement
+  -> (JSString, a -> a)    -- ^ Increent
   -> Now (EvStream (a -> a))
-adjustStream delta down up = do
+adjustStream (down,funD) (up,funU) = do
   streamUp   <- onClickStream up
   streamDown <- onClickStream down
-  return $ ((+delta)         <$ streamUp)
-        <> ((subtract delta) <$ streamDown)
+  return $ (funU <$ streamUp)
+        <> (funD <$ streamDown)
 
 
 
 main :: IO ()
 main = runNowMaster' $ do
-  ea <- fetchJSON "data/HD1.json" :: Now (Event [(Int,Float,Float)])
-  planNow $ (\a -> sync $ consoleLog (show a)) <$> ea
-
-    
-  
+  -- ea <- fetchJSON "data/HD1.json" :: Now (Event [(Int,Float,Float)])
+  -- planNow $ (sync . consoleLog . show) <$> ea
   ----------------------------------------------------------------
   -- Right-left
-  streamUD <- adjustStream 10 "#btn-down" "#btn-up"
+  streamUD <- adjustStream ("#btn-down", subtract 10) ("#btn-up",(+10))
   bhvUD    <- sample $ foldEs (\n f -> min 90 $ max (-90) $ f n) 0 streamUD
   -- Left-right
-  streamLR <- adjustStream 10 "#btn-left" "#btn-right"
+  streamLR <- adjustStream ("#btn-left",subtract 10) ("#btn-right",(+10))
   bhvLR    <- sample $ foldEs (\n f -> f n) 0 streamLR
+  -- Zoom
+  streamZ <- adjustStream ("#btn-zoomout", (/1.1)) ("#btn-zoomin",(*1.1))
+  bhvZoom <- sample $ foldEs (\n f -> f n) 1 streamZ
   --
   actimate (js_set_label "#lab-delta") $ bhvUD
   actimate (js_set_label "#lab-alpha") $ bhvLR
+  actimate (js_set_label "#lab-zoom")  $ bhvZoom
+
   ----------------------------------------------------------------
   let makeCamera a d =
         let α = Angle a :: Angle Degrees Double
@@ -83,8 +84,7 @@ main = runNowMaster' $ do
            * rotX (3*pi/2)
            * rotZ (pi/2)
            * rotY (asRadians δ)
-           * rotZ (asRadians α)
-           :: Quaternion Double
+           * rotZ (asRadians α) :: Quaternion Double
   -- let cameraQ = ((α,δ) -> 
   ss <- innerSizeBehavior "#area"
   flip actimate ss $ \(w,h) -> do
@@ -93,7 +93,7 @@ main = runNowMaster' $ do
   -- actimate (consoleLog . show) (makeCamera <$> bhvLR <*> bhvUD)
   
 -- Draw square
-  let draw cam = runCanvas "cnv" $ do
+  let draw zoom (w,h) cam = runCanvas "cnv" $ do
         clear
         forM_ ([-75, -65 .. 85 ] ++ [90]) $ \δ ->
           forM_ ([0, 10 .. 270] ++ [1 .. 9]) $ \α -> do
@@ -102,12 +102,14 @@ main = runNowMaster' $ do
                 d = Angle δ
             case fromSperical a d of
               Spherical v -> case project orthographic $ Spherical $ rotateVector cam v of
-                Just (ProjCoord (F.convert -> (x,y))) -> fillRect (180*x + 200) (200 - 180*y) 1 1
+                Just (ProjCoord (F.convert -> (x,y))) -> do
+                  let ss = zoom * fromIntegral (min w h) / 2.2
+                      xx = ss * x + fromIntegral w / 2
+                      yy = fromIntegral h / 2 - ss * y
+                  fillRect xx yy 1 1
                 Nothing -> return ()
 
-  actimate draw (makeCamera <$> bhvLR <*> bhvUD)
-  -- let bhv = (,) <$> bhvLR <*> bhvUD
-  -- x <- sample bhv
-  -- sync $ draw x
-  -- callIOStream draw $ toChanges bhv
-  -- return ()
+  actimate (\(a,b,c) -> draw a b c)
+    ((,,) <$> bhvZoom
+          <*> ss
+          <*> (makeCamera <$> bhvLR <*> bhvUD))
