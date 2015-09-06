@@ -1,0 +1,35 @@
+Name:           web-planetarium
+Version:        0.1
+Synopsis:       Library for building planetaruims
+Description:
+  Library for building planetaruims
+
+Cabal-Version:  >= 1.10
+License:        BSD3
+License-File:   LICENSE
+Author:         Aleksey Khudyakov <alexey.skladnoy@gmail.com>
+Maintainer:     Aleksey Khudyakov <alexey.skladnoy@gmail.com>
+Homepage:       http://github.com/Shimuuar/celestial
+Category:       Data
+Build-Type:     Simple
+
+source-repository head
+  type:     hg
+  location: http://bitbucket.org/Shimuuar/celestial
+
+Executable test
+  Ghc-options:      -Wall
+  Default-Language: Haskell2010
+  Main-is:          test.hs
+  Build-Depends:
+    base,
+    transformers,
+    aeson,
+    bytestring,
+    text,
+    ghcjs-base,
+    fixed-vector,
+    my-vectorspace >= 0.3.0,
+-- FIXME: cabal sandbox doesn't work with add-source
+--    celestial,
+    frpnow
