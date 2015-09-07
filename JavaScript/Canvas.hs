@@ -20,22 +20,13 @@ module JavaScript.Canvas (
   ) where
 
 import Control.Applicative
-import Control.Monad
 import Control.Monad.Trans.Reader
 import Control.Monad.IO.Class
-import Control.FRPNow
 
-import Data.Aeson
-import Data.String
 import qualified Data.Foldable as F
 import GHCJS.Types
-import GHCJS.Foreign
-import GHCJS.Marshal
 
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BL
+
 
 ----------------------------------------------------------------
 -- Canvas API
