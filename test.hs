@@ -38,6 +38,8 @@ import qualified Data.HashMap.Strict as HM
 
 import Prelude hiding (sequence)
 
+import Planetarium.Catalogs
+
 
 ----------------------------------------------------------------
 -- JS
@@ -46,13 +48,6 @@ import Prelude hiding (sequence)
 foreign import javascript safe "{$($1).empty(); $($1).append(''+$2);}"
   js_set_label :: JSString -> Double -> IO ()
 
-foreign import javascript safe "load_catalogHD($1)"
-  js_load_catalogHD :: JSFun (IO ()) -> IO ()
-
-foreign import javascript safe "catalogHD.ra[$1]"
-  catalogHDra  :: Int -> Angle HourRA Double
-foreign import javascript safe "catalogHD.dec[$1]"
-  catalogHDdec :: Int -> Angle Degrees Double
 
 
 ----------------------------------------------------------------
@@ -142,9 +137,7 @@ main :: IO ()
 main = runNowMaster' $ do
   -- Load data
   evtClines :: Event (Maybe CLines) <- fetchJSON "data/clines.json"
-  (evtHD,cbHD) <- callback
-  jsCall <- sync $ syncCallback NeverRetain True $ cbHD ()
-  sync $ js_load_catalogHD jsCall
+  evtHD <- loadCatalogHD
   -- Build planetarium 
   let bhvPlanetarium = buildPlanetarium evtClines evtHD
   ----------------------------------------------------------------
