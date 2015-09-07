@@ -30,6 +30,7 @@ import Celestial.Catalog
 import Web.FRP
 import Web.JQ
 import JavaScript.Canvas
+import JavaScript.Utils
 
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
@@ -93,7 +94,7 @@ data Camera = Camera
 
 drawSky :: Maybe Planetarium -> Camera -> IO ()
 drawSky Nothing _ = return ()
-drawSky (Just pl) (Camera cam zoom (w,h)) = runCanvas "cnv" $ do
+drawSky (Just pl) (Camera cam zoom (w,h)) = duration "sky" $ runCanvas "cnv" $ do
   clear
   let proj (Spherical v) = (project orthographic . Spherical . rotateVector cam) v
       scale p = let (x,y) = F.convert p
@@ -102,7 +103,7 @@ drawSky (Just pl) (Camera cam zoom (w,h)) = runCanvas "cnv" $ do
                     yy = fromIntegral h / 2 - ss * y
                 in (xx,yy)
   -- Draw grid
-  forM_ ([-75, -65 .. 85 ] ++ [90]) $ \δ ->
+  duration "grid" $ forM_ ([-75, -65 .. 85 ] ++ [90]) $ \δ ->
     forM_ ([0, 10 .. 270] ++ [1 .. 9]) $ \α -> do
       let a,d :: Angle Degrees Double
           a = Angle α
@@ -112,13 +113,9 @@ drawSky (Just pl) (Camera cam zoom (w,h)) = runCanvas "cnv" $ do
           fillRect x y 1 1
         Nothing -> return ()
   -- Draw constellation lines
-  lineWidth 0.5
-  forM_ (clines pl) $ \(CLine cl) -> do
+  lineWidth 1
+  duration "cline" $ forM_ (clines pl) $ \(CLine cl) -> do
     let mkPoint i = fromSperical (catalogHDra i) (catalogHDdec i)
-    --
-    -- liftIO $ consoleLog $ show cl
-    -- forM_ ((fmap . fmap) (\i -> (catalogHDra i, catalogHDdec i)) cl) $ \a -> forM_ a (liftIO . consoleLog . show)
-    --
     forM_ cl $ \contour ->
       case sequence $ proj . mkPoint <$> contour of
         Nothing -> return ()

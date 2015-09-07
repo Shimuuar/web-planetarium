@@ -3,10 +3,8 @@
 -- |
 -- FRP helpers for writing code
 module Web.FRP (
-    -- * Helpers
-    consoleLog
     -- * FRP
-  , runNowMaster'
+    runNowMaster'
   , actimate
   , actimateB
   , onClickStream
@@ -26,9 +24,6 @@ import GHCJS.Marshal
 ----------------------------------------------------------------
 -- High level functions
 ----------------------------------------------------------------
-
-consoleLog :: String -> IO ()
-consoleLog = js_console_log . fromString
 
 -- | Execute Now computation
 --
@@ -92,8 +87,3 @@ foreign import javascript safe "$( $1 ).innerHeight()"
   jq_innerHeight :: JSString -> IO Int
 foreign import javascript safe "$( $1 ).innerWidth()"
   jq_innerWidth :: JSString -> IO Int
-
-
-
-foreign import javascript safe "console.log($1)"
-  js_console_log :: JSString -> IO ()
