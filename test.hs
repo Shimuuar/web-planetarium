@@ -54,20 +54,14 @@ foreign import javascript safe "{$($1).empty(); $($1).append(''+$2);}"
 -- Reading catalogs
 ----------------------------------------------------------------
 
--- | Constellation line
-newtype CLine = CLine { getCLine :: V.Vector (V.Vector Int) }
-                deriving (FromJSON,Show)
-
-type CLines = HM.HashMap T.Text CLine
-  
 data Planetarium = Planetarium
-  { clines :: CLines
+  { clines :: CLineSet
   }
   
 
 buildPlanetarium
-  :: Event (Maybe CLines) -- ^ Load constellation lines
-  -> Event ()             -- ^ Load HD catalog
+  :: Event (Maybe CLineSet) -- ^ Load constellation lines
+  -> Event ()               -- ^ Load HD catalog
   -> Behavior (Maybe Planetarium)
 buildPlanetarium evtCL evtHD
   = make <$> (pure Nothing `switch` (pure        <$> evtCL))
@@ -107,10 +101,9 @@ drawSky (Just pl) (Camera cam zoom (w,h)) = duration "sky" $ runCanvas "cnv" $ d
         Nothing -> return ()
   -- Draw constellation lines
   lineWidth 1
-  duration "cline" $ forM_ (clines pl) $ \(CLine cl) -> do
-    let mkPoint i = fromSperical (catalogHDra i) (catalogHDdec i)
+  duration "cline" $ forM_ (clines pl) $ \(CLines cl) -> do
     forM_ cl $ \contour ->
-      case sequence $ proj . mkPoint <$> contour of
+      case sequence $ proj <$> contour of
         Nothing -> return ()
         Just (fmap scale -> l) -> drawLine l
 
@@ -136,8 +129,8 @@ adjustStream (down,funD) (up,funU) = do
 main :: IO ()
 main = runNowMaster' $ do
   -- Load data
-  evtClines :: Event (Maybe CLines) <- fetchJSON "data/clines.json"
-  evtHD <- loadCatalogHD
+  evtClines <- loadCLines
+  evtHD     <- loadCatalogHD
   -- Build planetarium 
   let bhvPlanetarium = buildPlanetarium evtClines evtHD
   ----------------------------------------------------------------
