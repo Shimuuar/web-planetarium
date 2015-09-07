@@ -41,9 +41,7 @@ import Prelude hiding (sequence)
 
 ----------------------------------------------------------------
 -- JS
-
-foreign import javascript safe "resize_canvas($1,$2)"
-  js_resize_canvas :: Int -> Int -> IO ()
+----------------------------------------------------------------
 
 foreign import javascript safe "{$($1).empty(); $($1).append(''+$2);}"
   js_set_label :: JSString -> Double -> IO ()
@@ -170,8 +168,8 @@ main = runNowMaster' $ do
 
   ----------------------------------------------------------------
   bhvSize <- innerSizeBehavior "#area"
-  flip actimate bhvSize $ \(w,h) -> do
-    js_resize_canvas w h
+  flip actimate bhvSize $ \(w,h) ->
+    runCanvas "cnv" $ resize w h
   -- Camera
   let makeCamera a d =
         let α = Angle a :: Angle Degrees Double

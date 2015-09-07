@@ -7,6 +7,8 @@ module JavaScript.Canvas (
   , runCanvas
   , width
   , height
+  , resize
+    -- * Drawing
   , fillRect
   , clearRect
   , moveTo
@@ -82,6 +84,8 @@ stroke :: Canvas ()
 stroke = Canvas $ ReaderT $ \(_,cxt) -> jscnv_stroke cxt 
 
 
+resize :: Int -> Int -> Canvas ()
+resize x y = Canvas $ ReaderT $ \(cnv,_) -> jscnv_resize cnv x y
 
 width :: Canvas Int
 width = Canvas $ ReaderT $ \(cnv,_) -> jscnv_width cnv
@@ -129,3 +133,6 @@ foreign import javascript safe "$1.width"
 
 foreign import javascript safe "$1.height"
   jscnv_height :: JSRef CanvasTag -> IO Int
+
+foreign import javascript safe "{$1.width = $2; $1.height = $3;}"
+  jscnv_resize :: JSRef CanvasTag -> Int -> Int -> IO ()
