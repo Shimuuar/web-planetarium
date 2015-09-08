@@ -90,6 +90,7 @@ drawSky (Just pl) (Camera cam zoom (w,h)) = duration "sky" $ runCanvas "cnv" $ d
                     yy = fromIntegral h / 2 - ss * y
                 in (xx,yy)
   -- Draw grid
+  strokeStyle "#88f"
   duration "grid" $ forM_ ([-75, -65 .. 85 ] ++ [90]) $ \δ ->
     forM_ ([0, 10 .. 270] ++ [1 .. 9]) $ \α -> do
       let a,d :: Angle Degrees Double
