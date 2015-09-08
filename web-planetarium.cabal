@@ -18,7 +18,7 @@ source-repository head
   location: http://bitbucket.org/Shimuuar/celestial
 
 Executable test
-  Ghc-options:      -Wall
+  Ghc-options:      -Wall -O2
   Default-Language: Haskell2010
   Main-is:          test.hs
   Build-Depends:
