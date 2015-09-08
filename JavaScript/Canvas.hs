@@ -17,6 +17,7 @@ module JavaScript.Canvas (
   , stroke
   , strokeStyle
   , drawLine
+  , drawprojLine
   , lineWidth
   , clear
   ) where
@@ -96,7 +97,17 @@ drawLine xs = case F.toList xs of
   [_]        -> return ()
   ((x,y):ps) -> moveTo x y >> F.forM_ ps (uncurry lineTo) >> stroke
 
-
+drawprojLine :: F.Foldable f => (a -> Maybe (Double,Double)) -> f a -> Canvas ()
+drawprojLine proj
+  = mapM_ drawLine . split . fmap proj . F.toList
+  where
+    split [] = []
+    split xs = case spanJust xs of
+      (a,rest) -> a : split rest
+    --
+    spanJust (Just a:xs) = case spanJust xs of
+      (as,rest) -> (a:as,rest)
+    spanJust xs = ([],xs)
 
 ----------------------------------------------------------------
 -- FFI
