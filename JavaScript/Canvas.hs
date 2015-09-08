@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 -- |
 module JavaScript.Canvas (
+    -- * Canvas accessors
     Canvas
   , runCanvas
   , width
@@ -14,6 +15,7 @@ module JavaScript.Canvas (
   , moveTo
   , lineTo
   , stroke
+  , strokeStyle
   , drawLine
   , lineWidth
   , clear
@@ -43,6 +45,10 @@ runCanvas cnvId (Canvas m) = do
   cxt <- jscnv_getContext cnv
   runReaderT m (cnv,cxt)
 
+----------------------------------------------------------------
+-- Primitives
+----------------------------------------------------------------
+
 fillRect :: Double -> Double -> Double -> Double -> Canvas ()
 fillRect x y w h = Canvas $ ReaderT $ \(_,cxt) ->
   jscnv_fillRect cxt x y w h
@@ -50,14 +56,6 @@ fillRect x y w h = Canvas $ ReaderT $ \(_,cxt) ->
 clearRect :: Double -> Double -> Double -> Double -> Canvas ()
 clearRect x y w h = Canvas $ ReaderT $ \(_,cxt) ->
   jscnv_clearRect cxt x y w h
-
-drawLine :: F.Foldable f => f (Double,Double) -> Canvas ()
-drawLine xs = case F.toList xs of
-  []  -> return ()
-  [_] -> return ()
-  ((x,y):xs) -> moveTo x y >> F.forM_ xs (uncurry lineTo) >> stroke
-
-
 
 clear :: Canvas ()
 clear = Canvas $ ReaderT $ \(cnv,_) -> jscnv_clear cnv
@@ -74,6 +72,9 @@ lineWidth w = Canvas $ ReaderT $ \(_,cxt) -> jscnv_lineWidth cxt w
 stroke :: Canvas ()
 stroke = Canvas $ ReaderT $ \(_,cxt) -> jscnv_stroke cxt 
 
+strokeStyle :: JSString -> Canvas ()
+strokeStyle s = Canvas $ ReaderT $ \(_,cxt) -> jscnv_strokeStyle cxt s
+
 
 resize :: Int -> Int -> Canvas ()
 resize x y = Canvas $ ReaderT $ \(cnv,_) -> jscnv_resize cnv x y
@@ -82,7 +83,19 @@ width :: Canvas Int
 width = Canvas $ ReaderT $ \(cnv,_) -> jscnv_width cnv
 
 height :: Canvas Int
-height = Canvas $ ReaderT $ \(cnv,_) -> jscnv_width cnv
+height = Canvas $ ReaderT $ \(cnv,_) -> jscnv_height cnv
+
+
+----------------------------------------------------------------
+-- Compound functions
+----------------------------------------------------------------
+
+drawLine :: F.Foldable f => f (Double,Double) -> Canvas ()
+drawLine xs = case F.toList xs of
+  []         -> return ()
+  [_]        -> return ()
+  ((x,y):ps) -> moveTo x y >> F.forM_ ps (uncurry lineTo) >> stroke
+
 
 
 ----------------------------------------------------------------
@@ -127,3 +140,6 @@ foreign import javascript safe "$1.height"
 
 foreign import javascript safe "{$1.width = $2; $1.height = $3;}"
   jscnv_resize :: JSRef CanvasTag -> Int -> Int -> IO ()
+
+foreign import javascript safe "$1.strokeStyle = $2"
+  jscnv_strokeStyle :: JSRef Context -> JSString -> IO ()
