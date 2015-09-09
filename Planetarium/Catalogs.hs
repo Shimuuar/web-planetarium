@@ -14,6 +14,7 @@ module Planetarium.Catalogs (
   , loadCatalogHD
   , catalogHDra
   , catalogHDdec
+  , catalogHDvisM
   ) where
 
 import Control.Applicative
@@ -75,3 +76,6 @@ foreign import javascript safe "catalogHD.ra[$1]"
   catalogHDra  :: Int -> Angle HourRA Double
 foreign import javascript safe "catalogHD.dec[$1]"
   catalogHDdec :: Int -> Angle Degrees Double
+foreign import javascript safe "catalogHD.m[$1]"
+  catalogHDvisM :: Int -> Double
+

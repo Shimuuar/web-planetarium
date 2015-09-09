@@ -56,8 +56,9 @@ foreign import javascript safe "{$($1).empty(); $($1).append(''+$2);}"
 ----------------------------------------------------------------
 
 data Planetarium = Planetarium
-  { clines    :: CLineSet
-  , coordGrid :: [[Spherical (EquatorialCoord J1900) Double]]
+  { clines      :: CLineSet
+  , coordGrid   :: [[Spherical (EquatorialCoord J1900) Double]]
+  , brightStars :: [(Spherical (EquatorialCoord J1900) Double,Double)]
   }
 
 
@@ -85,22 +86,32 @@ buildPlanetarium evtCL evtHD
     make mCL mHD = do
       cl <- mCL
       mHD
-      return $ Planetarium { clines    = cl
-                           , coordGrid = simpleCoordGrid
-                           }
+      return $ Planetarium
+        { clines      = cl
+        , coordGrid   = simpleCoordGrid
+        , brightStars = [ (fromSperical α δ, m)
+                        | i <- [1 .. 272150]
+                        , let α = catalogHDra   i
+                        , let δ = catalogHDdec  i
+                        , let m = catalogHDvisM i
+                        , m < 5
+                        ]
+        }
 
 drawSky :: Maybe Planetarium -> Camera -> IO ()
 drawSky Nothing _ = return ()
 drawSky (Just pl) (Camera cam zoom (w,h)) = duration "sky" $ runCanvas "cnv" $ do
   clear
   let proj (Spherical v) = (project orthographic . Spherical . rotateVector cam) v
+      zoomFactor = zoom * fromIntegral (min w h) / 2.2
       scale p = let (x,y) = F.convert p
-                    ss = zoom * fromIntegral (min w h) / 2.2
+                    ss = zoomFactor
                     xx = ss * x + fromIntegral w / 2
                     yy = fromIntegral h / 2 - ss * y
                 in (xx,yy)
+  -- Draw sky
   fillStyle "#aaf"
-  arc (fromIntegral w/2, fromIntegral h/2) (zoom * fromIntegral (min w h) / 2.2 * 1) (0,2*pi)
+  arc (fromIntegral w/2, fromIntegral h/2) zoomFactor (0,2*pi)
   fill
   -- Draw grid
   beginPath
@@ -119,7 +130,18 @@ drawSky (Just pl) (Camera cam zoom (w,h)) = duration "sky" $ runCanvas "cnv" $ d
         Nothing -> return ()
         Just (fmap scale -> l) -> drawLine l
   stroke
-
+  -- Draw stars
+  beginPath
+  fillStyle "#fff"
+  forM_ (brightStars pl) $ \(p,m) ->
+    forM_ (fmap scale $ proj p) $ \(x,y) -> do
+      let r = (6 - m) / 1.5
+      -- fillRect x y r r
+      moveTo x y
+      arc (x,y) r (0,2*pi)
+  fill
+  -- liftIO $ consoleLog $ show $ length $ brightStars pl
+  -- liftIO $ consoleLog $ show $ [(p,m) | (Spherical p,m) <- take 100 $ brightStars pl]
 
 ----------------------------------------------------------------
 -- Go!
