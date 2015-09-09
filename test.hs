@@ -69,7 +69,7 @@ simpleCoordGrid =
   | δ <- [-80,-70 .. 80]
   ] ++
   [ [ fromSperical (Angle α :: Angle Degrees Double) (Angle δ :: Angle Degrees Double)
-    | δ <- [-90,-70 .. 90]
+    | δ <- [-88] ++ [-80,-70 .. 80] ++ [88]
     ]
   | α <- [0,10 .. 360]
   ]
