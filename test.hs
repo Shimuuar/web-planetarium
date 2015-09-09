@@ -55,9 +55,23 @@ foreign import javascript safe "{$($1).empty(); $($1).append(''+$2);}"
 ----------------------------------------------------------------
 
 data Planetarium = Planetarium
-  { clines :: CLineSet
+  { clines    :: CLineSet
+  , coordGrid :: [[Spherical (EquatorialCoord J1900) Double]]
   }
-  
+
+
+simpleCoordGrid :: [[Spherical (EquatorialCoord J1900) Double]]
+simpleCoordGrid =
+  [ [ fromSperical (Angle α :: Angle Degrees Double) (Angle δ :: Angle Degrees Double)
+    | α <- [0,10 .. 360]
+    ]
+  | δ <- [-80,-70 .. 80]
+  ] ++
+  [ [ fromSperical (Angle α :: Angle Degrees Double) (Angle δ :: Angle Degrees Double)
+    | δ <- [-90,-70 .. 90]
+    ]
+  | α <- [0,10 .. 360]
+  ]
 
 buildPlanetarium
   :: Event (Maybe CLineSet) -- ^ Load constellation lines
@@ -70,7 +84,9 @@ buildPlanetarium evtCL evtHD
     make mCL mHD = do
       cl <- mCL
       mHD
-      return $ Planetarium { clines = cl }
+      return $ Planetarium { clines    = cl
+                           , coordGrid = simpleCoordGrid
+                           }
 
 data Camera = Camera
   { cameraView     :: Quaternion Double
@@ -89,25 +105,24 @@ drawSky (Just pl) (Camera cam zoom (w,h)) = duration "sky" $ runCanvas "cnv" $ d
                     xx = ss * x + fromIntegral w / 2
                     yy = fromIntegral h / 2 - ss * y
                 in (xx,yy)
+  fillStyle "#aaf"
+  arc (fromIntegral w/2, fromIntegral h/2) (zoom * fromIntegral (min w h) / 2.2 * 1) (0,2*pi)
+  fill
   -- Draw grid
-  strokeStyle "#88f"
-  duration "grid" $ forM_ ([-75, -65 .. 85 ] ++ [90]) $ \δ ->
-    forM_ ([0, 10 .. 270] ++ [1 .. 9]) $ \α -> do
-      let a,d :: Angle Degrees Double
-          a = Angle α
-          d = Angle δ
-      case proj $ fromSperical a d of
-        Just (ProjCoord (scale -> (x,y))) -> do
-          fillRect x y 1 1
-        Nothing -> return ()
+  beginPath
+  strokeStyle "#ccf"
+  duration "grid" $ forM_ (coordGrid pl) $ \ln -> do
+    drawprojLine (fmap scale . proj) ln
+  stroke
   -- Draw constellation lines
-  lineWidth 1
+  beginPath
+  strokeStyle "#448"
   duration "cline" $ forM_ (clines pl) $ \(CLines cl) -> do
     forM_ cl $ \contour ->
       case sequence $ proj <$> contour of
         Nothing -> return ()
         Just (fmap scale -> l) -> drawLine l
-
+  stroke
 
 
 ----------------------------------------------------------------

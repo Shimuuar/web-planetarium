@@ -16,10 +16,14 @@ module JavaScript.Canvas (
   , lineTo
   , stroke
   , strokeStyle
+  , fill
+  , fillStyle
+  , beginPath
   , drawLine
   , drawprojLine
   , lineWidth
   , clear
+  , arc
   ) where
 
 import Control.Applicative
@@ -73,8 +77,14 @@ lineWidth w = Canvas $ ReaderT $ \(_,cxt) -> jscnv_lineWidth cxt w
 stroke :: Canvas ()
 stroke = Canvas $ ReaderT $ \(_,cxt) -> jscnv_stroke cxt 
 
+fill :: Canvas ()
+fill = Canvas $ ReaderT $ \(_,cxt) -> jscnv_fill cxt 
+
 strokeStyle :: JSString -> Canvas ()
 strokeStyle s = Canvas $ ReaderT $ \(_,cxt) -> jscnv_strokeStyle cxt s
+
+fillStyle :: JSString -> Canvas ()
+fillStyle s = Canvas $ ReaderT $ \(_,cxt) -> jscnv_fillStyle cxt s
 
 
 resize :: Int -> Int -> Canvas ()
@@ -86,6 +96,13 @@ width = Canvas $ ReaderT $ \(cnv,_) -> jscnv_width cnv
 height :: Canvas Int
 height = Canvas $ ReaderT $ \(cnv,_) -> jscnv_height cnv
 
+beginPath :: Canvas ()
+beginPath = Canvas $ ReaderT $ \(_,cxt) -> jscnv_beginPath cxt
+
+arc :: (Double,Double) -> Double -> (Double,Double) -> Canvas ()
+arc (x,y) r (a,b) = Canvas $ ReaderT $ \(_,cxt) ->
+  jscnv_arc cxt x y r a b
+
 
 ----------------------------------------------------------------
 -- Compound functions
@@ -95,11 +112,11 @@ drawLine :: F.Foldable f => f (Double,Double) -> Canvas ()
 drawLine xs = case F.toList xs of
   []         -> return ()
   [_]        -> return ()
-  ((x,y):ps) -> moveTo x y >> F.forM_ ps (uncurry lineTo) >> stroke
+  ((x,y):ps) -> moveTo x y >> F.forM_ ps (uncurry lineTo)
 
 drawprojLine :: F.Foldable f => (a -> Maybe (Double,Double)) -> f a -> Canvas ()
 drawprojLine proj
-  = mapM_ drawLine . split . fmap proj . F.toList
+  = mapM_ (\x -> drawLine x) . split . fmap proj . F.toList
   where
     split [] = []
     split xs = case spanJust xs of
@@ -107,7 +124,10 @@ drawprojLine proj
     --
     spanJust (Just a:xs) = case spanJust xs of
       (as,rest) -> (a:as,rest)
-    spanJust xs = ([],xs)
+    spanJust xs = ([],dropNothing xs)
+    --
+    dropNothing (Nothing:xs) = dropNothing xs
+    dropNothing xs = xs
 
 ----------------------------------------------------------------
 -- FFI
@@ -140,6 +160,15 @@ foreign import javascript safe "$1.lineWidth = $2"
 foreign import javascript safe "$1.stroke()"
   jscnv_stroke :: JSRef Context -> IO ()
 
+foreign import javascript safe "$1.strokeStyle = $2"
+  jscnv_strokeStyle :: JSRef Context -> JSString -> IO ()
+
+foreign import javascript safe "$1.fill()"
+  jscnv_fill :: JSRef Context -> IO ()
+
+foreign import javascript safe "$1.fillStyle = $2"
+  jscnv_fillStyle :: JSRef Context -> JSString -> IO ()
+
 foreign import javascript safe "$1.width = $1.width"
   jscnv_clear :: JSRef CanvasTag -> IO ()
 
@@ -152,5 +181,8 @@ foreign import javascript safe "$1.height"
 foreign import javascript safe "{$1.width = $2; $1.height = $3;}"
   jscnv_resize :: JSRef CanvasTag -> Int -> Int -> IO ()
 
-foreign import javascript safe "$1.strokeStyle = $2"
-  jscnv_strokeStyle :: JSRef Context -> JSString -> IO ()
+foreign import javascript safe "$1.beginPath()"
+  jscnv_beginPath :: JSRef Context -> IO ()
+
+foreign import javascript safe "$1.arc($2,$3,$4,$5,$6)"
+  jscnv_arc :: JSRef Context -> Double -> Double -> Double -> Double -> Double -> IO ()
