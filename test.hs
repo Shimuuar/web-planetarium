@@ -39,6 +39,7 @@ import qualified Data.HashMap.Strict as HM
 import Prelude hiding (sequence)
 
 import Planetarium.Catalogs
+import Planetarium.Camera
 
 
 ----------------------------------------------------------------
@@ -88,13 +89,6 @@ buildPlanetarium evtCL evtHD
                            , coordGrid = simpleCoordGrid
                            }
 
-data Camera = Camera
-  { cameraView     :: Quaternion Double
-  , cameraZoom     :: Double
-  , cameraViewport :: (Int,Int)
-  }
-  deriving (Show,Eq)
-
 drawSky :: Maybe Planetarium -> Camera -> IO ()
 drawSky Nothing _ = return ()
 drawSky (Just pl) (Camera cam zoom (w,h)) = duration "sky" $ runCanvas "cnv" $ do
@@ -110,12 +104,14 @@ drawSky (Just pl) (Camera cam zoom (w,h)) = duration "sky" $ runCanvas "cnv" $ d
   fill
   -- Draw grid
   beginPath
+  lineWidth 0.5
   strokeStyle "#ccf"
   duration "grid" $ forM_ (coordGrid pl) $ \ln -> do
     drawprojLine (fmap scale . proj) ln
   stroke
   -- Draw constellation lines
   beginPath
+  lineWidth 1
   strokeStyle "#448"
   duration "cline" $ forM_ (clines pl) $ \(CLines cl) -> do
     forM_ cl $ \contour ->
@@ -176,11 +172,7 @@ main = runNowMaster' $ do
   let makeCamera a d =
         let α = Angle a :: Angle Degrees Double
             δ = Angle d :: Angle Degrees Double
-        in 1
-           * rotX (3*pi/2)
-           * rotZ (pi/2)
-           * rotY (asRadians δ)
-           * rotZ (asRadians α) :: Quaternion Double
+        in makeCameraRotation α δ
   let bhvCamera = Camera
                <$> (makeCamera <$> bhvLR <*> bhvUD)
                <*> bhvZoom

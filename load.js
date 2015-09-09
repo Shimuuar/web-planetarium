@@ -1,7 +1,8 @@
 
 var catalogHD = {
-    ra : [0.0/0.0],
+    ra  : [0.0/0.0],
     dec : [0.0/0.0],
+    m   : [0.0/0.0],
 }
 
 // Load HD catalog
@@ -15,10 +16,12 @@ function load_catalogHD(callback) {
 		var row = lines[i];
 		var ra  = parseFloat(row.slice(18,20)) + parseFloat(row.slice(20,23))/600;
 		var dec = parseFloat(row.slice(24,26)) + parseFloat(row.slice(26,28))/60;
+		var m   = parseFloat(row.slice(29,34))
 		if( row[23]==='-' )
 		    dec = -dec;
 		catalogHD.ra .push(ra);
 		catalogHD.dec.push(dec);
+		catalogHD.m  .push(m);
 	    }
 	    console.log("READY");
 	    callback()
