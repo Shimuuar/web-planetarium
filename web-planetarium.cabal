@@ -29,6 +29,7 @@ Executable test
     text,
     ghcjs-base,
     vector,
+    time,
     fixed-vector,
     unordered-containers,
     my-vectorspace >= 0.3.0,

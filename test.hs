@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ViewPatterns               #-}
 
+import Control.Category    ((<<<))
 import Control.Applicative
 import Control.Monad hiding (forM_,sequence)
 import Control.Monad.IO.Class
@@ -26,6 +27,8 @@ import GHCJS.Marshal
 import Celestial.Projection
 import Celestial.Coordinates
 import Celestial.Catalog
+import Celestial.Geo
+import Celestial.Time
 
 import Web.FRP
 import Web.JQ
@@ -42,6 +45,8 @@ import Planetarium.Catalogs
 import Planetarium.Camera
 import Planetarium.Planetarium
 import Planetarium.Rendering
+
+
 
 ----------------------------------------------------------------
 -- JS
@@ -64,8 +69,9 @@ buildPlanetarium evtCL evtHD
       cl <- mCL
       mHD
       return $ Planetarium
-        { clines      = cl
-        , coordGrid   = simpleCoordGrid
+        { clines       = cl
+        , coordGridEq  = simpleCoordGrid
+        , coordGridHor = simpleCoordGrid
         , brightStars = [ (fromSperical α δ, m)
                         | i <- [1 .. 272150]
                         , let α = catalogHDra   i
@@ -98,7 +104,7 @@ main = runNowMaster' $ do
   -- Load data
   evtClines <- loadCLines
   evtHD     <- loadCatalogHD
-  -- Build planetarium 
+  -- Build planetarium
   let bhvPlanetarium = buildPlanetarium evtClines evtHD
   ----------------------------------------------------------------
   -- Right-left
@@ -111,13 +117,9 @@ main = runNowMaster' $ do
   streamZ <- adjustStream ("#btn-zoomout", (/1.1)) ("#btn-zoomin",(*1.1))
   bhvZoom <- sample $ foldEs (\n f -> f n) 1 streamZ
   --
-  -- bhvAAA <- pure $ pure (1/0)
-  --           `switch`
-  --                 (pure . fromIntegral . V.length <$> catHD)
   actimate (js_set_label "#lab-delta") $ bhvUD
   actimate (js_set_label "#lab-alpha") $ bhvLR
   actimate (js_set_label "#lab-zoom")  $ bhvZoom
-  -- actimate (js_set_label "#lab-extra") $ bhvAAA
 
   ----------------------------------------------------------------
   bhvSize <- innerSizeBehavior "#area"
@@ -128,14 +130,31 @@ main = runNowMaster' $ do
         let α = Angle a :: Angle Degrees Double
             δ = Angle d :: Angle Degrees Double
         in makeCameraRotation α δ
-  let bhvCamera = Camera
-               <$> (makeCamera <$> bhvLR <*> bhvUD)
-               <*> bhvZoom
-               <*> bhvSize
+  let locMoscow = Location (Angle 55) (Angle 37)
+  jd <- sync currentJD
+  --
+  let LST lst = meanLST locMoscow jd
+      lstA = Angle lst :: Angle HourRA Double
+  let trHor2Eq :: CoordTransform Double HorizonalCoord (EquatorialCoord J1900)
+      trHor2Eq = CoordTransform
+               $ 1
+               * rotY (negate $ pi/2 - asRadians (geoLatitude locMoscow))
+               * rotZ (negate $ asRadians lstA)
+  let bhvCamera = do
+        cam  <- makeCamera <$> bhvLR <*> bhvUD
+        zoom <- bhvZoom
+        view <- bhvSize
+        return $ Camera
+          { cameraViewEq   = CoordTransform cam
+          , cameraViewHor  = CoordTransform cam <<< trHor2Eq
+          , cameraZoom     = zoom
+          , cameraViewport = view
+          }
   -- Draw
   eLoaded <- sample $ whenJust bhvPlanetarium
   _ <- do cam <- sample bhvCamera
-          let fun p = sync $ drawSky (Just p) cam
+          let fun p = sync $ duration "sky" $ runCanvas "cnv" $ drawSky (Just p) cam
           planNow $ fun <$> eLoaded
-  actimateB drawSky bhvPlanetarium bhvCamera 
+  actimateB (\a b -> duration "sky" $ runCanvas "cnv" $ drawSky a b)
+    bhvPlanetarium bhvCamera
   return ()

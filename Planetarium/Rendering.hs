@@ -27,11 +27,17 @@ import Prelude hiding (sequence)
 ----------------------------------------------------------------
 
 -- | Render planetarium on canvas
-drawSky :: Maybe Planetarium -> Camera -> IO ()
+drawSky :: Maybe Planetarium -> Camera -> Canvas ()
 drawSky Nothing _ = return ()
-drawSky (Just pl) (Camera cam zoom (w,h)) = duration "sky" $ runCanvas "cnv" $ do
+drawSky (Just pl) (Camera { cameraViewEq   = CoordTransform cam
+                          , cameraViewHor  = CoordTransform camHor
+                          , cameraZoom     = zoom
+                          , cameraViewport = (w,h)
+                          }) = do
+  -- Start drawing
   clear
-  let proj (Spherical v) = (project orthographic . Spherical . rotateVector cam) v
+  let proj  (Spherical v) = (project orthographic . Spherical . rotateVector cam)    v
+      projH (Spherical v) = (project orthographic . Spherical . rotateVector camHor) v
       zoomFactor = zoom * fromIntegral (min w h) / 2.2
       scale p = let (x,y) = F.convert p
                     ss = zoomFactor
@@ -46,8 +52,15 @@ drawSky (Just pl) (Camera cam zoom (w,h)) = duration "sky" $ runCanvas "cnv" $ d
   beginPath
   lineWidth 0.5
   strokeStyle "#ccf"
-  duration "grid" $ forM_ (coordGrid pl) $ \ln -> do
+  duration "grid" $ forM_ (coordGridEq pl) $ \ln -> do
     drawprojLine (fmap scale . proj) ln
+  stroke
+  -- Draw grid
+  beginPath
+  lineWidth 0.5
+  strokeStyle "#cfc"
+  duration "grid" $ forM_ (coordGridHor pl) $ \ln -> do
+    drawprojLine (fmap scale . projH) ln
   stroke
   -- Draw constellation lines
   beginPath
