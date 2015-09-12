@@ -62,7 +62,7 @@ data Planetarium = Planetarium
   }
 
 
-simpleCoordGrid :: [[Spherical (EquatorialCoord J1900) Double]]
+simpleCoordGrid :: [[Spherical t Double]]
 simpleCoordGrid =
   [ [ fromSperical (Angle α :: Angle Degrees Double) (Angle δ :: Angle Degrees Double)
     | α <- [0,10 .. 360]
@@ -140,8 +140,7 @@ drawSky (Just pl) (Camera cam zoom (w,h)) = duration "sky" $ runCanvas "cnv" $ d
       moveTo x y
       arc (x,y) r (0,2*pi)
   fill
-  -- liftIO $ consoleLog $ show $ length $ brightStars pl
-  -- liftIO $ consoleLog $ show $ [(p,m) | (Spherical p,m) <- take 100 $ brightStars pl]
+
 
 ----------------------------------------------------------------
 -- Go!
@@ -200,5 +199,9 @@ main = runNowMaster' $ do
                <*> bhvZoom
                <*> bhvSize
   -- Draw
+  eLoaded <- sample $ whenJust bhvPlanetarium
+  _ <- do cam <- sample bhvCamera
+          let fun p = sync $ drawSky (Just p) cam
+          planNow $ fun <$> eLoaded
   actimateB drawSky bhvPlanetarium bhvCamera 
   return ()
