@@ -40,7 +40,8 @@ import Prelude hiding (sequence)
 
 import Planetarium.Catalogs
 import Planetarium.Camera
-
+import Planetarium.Planetarium
+import Planetarium.Rendering
 
 ----------------------------------------------------------------
 -- JS
@@ -50,30 +51,6 @@ foreign import javascript safe "{$($1).empty(); $($1).append(''+$2);}"
   js_set_label :: JSString -> Double -> IO ()
 
 
-
-----------------------------------------------------------------
--- Reading catalogs
-----------------------------------------------------------------
-
-data Planetarium = Planetarium
-  { clines      :: CLineSet
-  , coordGrid   :: [[Spherical (EquatorialCoord J1900) Double]]
-  , brightStars :: [(Spherical (EquatorialCoord J1900) Double,Double)]
-  }
-
-
-simpleCoordGrid :: [[Spherical t Double]]
-simpleCoordGrid =
-  [ [ fromSperical (Angle α :: Angle Degrees Double) (Angle δ :: Angle Degrees Double)
-    | α <- [0,10 .. 360]
-    ]
-  | δ <- [-80,-70 .. 80]
-  ] ++
-  [ [ fromSperical (Angle α :: Angle Degrees Double) (Angle δ :: Angle Degrees Double)
-    | δ <- [-88] ++ [-80,-70 .. 80] ++ [88]
-    ]
-  | α <- [0,10 .. 360]
-  ]
 
 buildPlanetarium
   :: Event (Maybe CLineSet) -- ^ Load constellation lines
@@ -97,49 +74,6 @@ buildPlanetarium evtCL evtHD
                         , m < 5
                         ]
         }
-
-drawSky :: Maybe Planetarium -> Camera -> IO ()
-drawSky Nothing _ = return ()
-drawSky (Just pl) (Camera cam zoom (w,h)) = duration "sky" $ runCanvas "cnv" $ do
-  clear
-  let proj (Spherical v) = (project orthographic . Spherical . rotateVector cam) v
-      zoomFactor = zoom * fromIntegral (min w h) / 2.2
-      scale p = let (x,y) = F.convert p
-                    ss = zoomFactor
-                    xx = ss * x + fromIntegral w / 2
-                    yy = fromIntegral h / 2 - ss * y
-                in (xx,yy)
-  -- Draw sky
-  fillStyle "#aaf"
-  arc (fromIntegral w/2, fromIntegral h/2) zoomFactor (0,2*pi)
-  fill
-  -- Draw grid
-  beginPath
-  lineWidth 0.5
-  strokeStyle "#ccf"
-  duration "grid" $ forM_ (coordGrid pl) $ \ln -> do
-    drawprojLine (fmap scale . proj) ln
-  stroke
-  -- Draw constellation lines
-  beginPath
-  lineWidth 1
-  strokeStyle "#448"
-  duration "cline" $ forM_ (clines pl) $ \(CLines cl) -> do
-    forM_ cl $ \contour ->
-      case sequence $ proj <$> contour of
-        Nothing -> return ()
-        Just (fmap scale -> l) -> drawLine l
-  stroke
-  -- Draw stars
-  beginPath
-  fillStyle "#fff"
-  forM_ (brightStars pl) $ \(p,m) ->
-    forM_ (fmap scale $ proj p) $ \(x,y) -> do
-      let r = (6 - m) / 1.5
-      -- fillRect x y r r
-      moveTo x y
-      arc (x,y) r (0,2*pi)
-  fill
 
 
 ----------------------------------------------------------------
