@@ -72,7 +72,7 @@ buildPlanetarium evtCL evtHD
         { clines       = cl
         , coordGridEq  = simpleCoordGrid
         , coordGridHor = simpleCoordGrid
-        , brightStars = [ (fromSperical α δ, m)
+        , brightStars = [ (toEquatorial α δ, m)
                         | i <- [1 .. 272150]
                         , let α = catalogHDra   i
                         , let δ = catalogHDdec  i
