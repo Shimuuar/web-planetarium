@@ -141,12 +141,15 @@ main = runNowMaster' $ do
                * rotY (negate $ pi/2 - asRadians (geoLatitude locMoscow))
                * rotZ (negate $ asRadians lstA)
   let bhvCamera = do
-        cam  <- makeCamera <$> bhvLR <*> bhvUD
+        a    <- bhvLR
+        d    <- bhvUD
+        let cam = lookAtEquatorial (Angle a :: Angle Degrees Double)
+                                   (Angle d :: Angle Degrees Double)
         zoom <- bhvZoom
         view <- bhvSize
         return $ Camera
-          { cameraViewEq   = CoordTransform cam
-          , cameraViewHor  = CoordTransform cam <<< trHor2Eq
+          { cameraViewEq   = cam
+          , cameraViewHor  = cam <<< trHor2Eq
           , cameraZoom     = zoom
           , cameraViewport = view
           }
