@@ -25,12 +25,12 @@ data Planetarium = Planetarium
 -- | Coordinate grid with fixed step
 simpleCoordGrid :: [[Spherical c Double]]
 simpleCoordGrid =
-  [ [ cast $ toHorizontal (Angle α :: Angle Degrees Double) (Angle δ :: Angle Degrees Double)
+  [ [ cast $ toHorizontal (angle α :: Angle Degrees Double) (angle δ :: Angle Degrees Double)
     | α <- [0,10 .. 360]
     ]
   | δ <- [-80,-70 .. 80]
   ] ++
-  [ [ cast $ toHorizontal (Angle α :: Angle Degrees Double) (Angle δ :: Angle Degrees Double)
+  [ [ cast $ toHorizontal (angle α :: Angle Degrees Double) (angle δ :: Angle Degrees Double)
     | δ <- [-88] ++ [-80,-70 .. 80] ++ [88]
     ]
   | α <- [0,10 .. 360]

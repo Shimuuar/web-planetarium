@@ -72,10 +72,16 @@ loadCatalogHD = do
 foreign import javascript safe "load_catalogHD($1)"
   js_load_catalogHD :: JSFun (IO ()) -> IO ()
 
+catalogHDra :: Int -> Angle HourRA Double
+catalogHDra = angle . js_catalogHDra
+
+catalogHDdec :: Int -> Angle Degrees Double
+catalogHDdec = angle . js_catalogHDdec
+
 foreign import javascript safe "catalogHD.ra[$1]"
-  catalogHDra  :: Int -> Angle HourRA Double
+  js_catalogHDra  :: Int -> Double
 foreign import javascript safe "catalogHD.dec[$1]"
-  catalogHDdec :: Int -> Angle Degrees Double
+  js_catalogHDdec :: Int -> Double
 foreign import javascript safe "catalogHD.m[$1]"
   catalogHDvisM :: Int -> Double
 

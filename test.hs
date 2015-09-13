@@ -126,11 +126,11 @@ main = runNowMaster' $ do
   flip actimate bhvSize $ \(w,h) ->
     runCanvas "cnv" $ resize w h
   -- Camera
-  let makeCamera a d =
-        let α = Angle a :: Angle Degrees Double
-            δ = Angle d :: Angle Degrees Double
-        in makeCameraRotation α δ
-  let locMoscow = Location (Angle 55) (Angle 37)
+  -- let makeCamera a d =
+  --       let α = Angle a :: Angle Degrees Double
+  --           δ = Angle d :: Angle Degrees Double
+  --       in makeCameraRotation α δ
+  let locMoscow = Location (angle 55) (angle 37)
   jd <- sync currentJD
   --
   let LST lst = meanLST locMoscow jd
