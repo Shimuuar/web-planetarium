@@ -72,7 +72,7 @@ buildPlanetarium evtCL evtHD
         { clines       = cl
         , coordGridEq  = simpleCoordGrid
         , coordGridHor = simpleCoordGrid
-        , brightStars = [ (toEquatorial α δ, m)
+        , brightStars = [ (fromSpherical α δ, m)
                         | i <- [1 .. 272150]
                         , let α = catalogHDra   i
                         , let δ = catalogHDdec  i
@@ -133,23 +133,17 @@ main = runNowMaster' $ do
   let locMoscow = Location (angle 55) (angle 37)
   jd <- sync currentJD
   --
-  let LST lst = meanLST locMoscow jd
-      lstA = Angle lst :: Angle HourRA Double
-  let trHor2Eq :: CoordTransform Double HorizonalCoord (EquatorialCoord J1900)
-      trHor2Eq = CoordTransform
-               $ 1
-               * rotY (negate $ pi/2 - asRadians (geoLatitude locMoscow))
-               * rotZ (negate $ asRadians lstA)
+  let lst = meanLST locMoscow jd
   let bhvCamera = do
         a    <- bhvLR
         d    <- bhvUD
-        let cam = lookAtEquatorial (Angle a :: Angle Degrees Double)
-                                   (Angle d :: Angle Degrees Double)
+        let cam = lookAtEquatorial (angle a :: Angle Degrees Double)
+                                   (angle d :: Angle Degrees Double)
         zoom <- bhvZoom
         view <- bhvSize
         return $ Camera
           { cameraViewEq   = cam
-          , cameraViewHor  = cam <<< trHor2Eq
+          , cameraViewHor  = cam <<< horizontalToEquatorial locMoscow lst
           , cameraZoom     = zoom
           , cameraViewport = view
           }

@@ -51,7 +51,7 @@ loadCLines
   = (fmap . fmap . fmap) (CLines . (V.map . V.map) make)
  <$> fetchJSON "data/clines.json"
   where
-    make i = toEquatorial (catalogHDra i) (catalogHDdec i)
+    make i = fromSpherical (catalogHDra i) (catalogHDdec i)
                
 
 ----------------------------------------------------------------
