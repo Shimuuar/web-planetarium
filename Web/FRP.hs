@@ -9,6 +9,7 @@ module Web.FRP (
   , actimateB
   , onClickStream
   , innerSizeBehavior
+  , wheelEventStream
   ) where
 
 import Control.Applicative
@@ -20,6 +21,9 @@ import Data.String
 import GHCJS.Types
 import GHCJS.Foreign
 import GHCJS.Marshal
+
+import JavaScript.Utils
+
 
 ----------------------------------------------------------------
 -- High level functions
@@ -72,6 +76,26 @@ innerSizeBehavior selector = do
   sync $ jq_event_resize jsCall
   sample $ foldrSwitch (pure wh) (pure <$> stream)
 
+-- | Stream for wheel events
+wheelEventStream :: JSString -> Now (EvStream Double)
+wheelEventStream sel = do
+  (stream,call) <- callbackStream
+  jsCall <- sync $ syncCallback1 AlwaysRetain True $ \i -> do
+    Just ii <- fromJSRef i
+    call ii
+  sync $ jq_wheel sel jsCall
+  return stream
+
+{-
+        $('#whole').bind('DOMMouseScroll mousewheel', function(e){
+            if(e.originalEvent.wheelDelta > 0 || e.originalEvent.detail < 0) {
+                alert("up");
+            }
+            else{
+                alert("down");
+            }
+        });
+-}
 
 ----------------------------------------------------------------
 -- FFI
@@ -87,3 +111,6 @@ foreign import javascript safe "$( $1 ).innerHeight()"
   jq_innerHeight :: JSString -> IO Int
 foreign import javascript safe "$( $1 ).innerWidth()"
   jq_innerWidth :: JSString -> IO Int
+
+foreign import javascript safe "$( $1 ).bind('DOMMouseScroll mousewheel', function(e){$2(e.originalEvent.detail)})"
+  jq_wheel :: JSString -> JSFun (JSRef Double -> IO ()) -> IO ()

@@ -10,6 +10,7 @@ import Control.Monad hiding (forM_,sequence)
 import Control.Monad.IO.Class
 import Control.FRPNow
 import Control.Concurrent
+import Control.Exception
 import Data.Aeson
 import Data.Angle
 import Data.Quaternion
@@ -98,9 +99,34 @@ adjustStream (down,funD) (up,funU) = do
         <> (funD <$ streamDown)
 
 
+data MSink a = MSink (MVar a) (MVar ())
+
+newMSink :: IO (MSink a)
+newMSink = MSink <$> newEmptyMVar <*> newMVar ()
+
+putSink :: MSink a -> a -> IO ()
+putSink (MSink mv sem) a = do
+  -- () <- takeMVar sem
+  _  <- tryTakeMVar mv
+  putMVar mv  a
+  -- putMVar sem ()
+
+getSink :: MSink a -> IO a
+getSink (MSink mv _) = do
+  takeMVar mv
+
+
 
 main :: IO ()
 main = runNowMaster' $ do
+  drawSink <- sync newMSink
+  -- Start rendered thread
+  _ <- sync $ forkIO $ forever $ do
+    e <- try $ do
+      consoleLog "Prepare!"
+      (pln,cam) <- getSink drawSink
+      duration "sky" $ runCanvas "cnv" $ drawSky (Just pln) cam
+    consoleLog $ show (e :: Either SomeException ())
   -- Load data
   evtClines <- loadCLines
   evtHD     <- loadCatalogHD
@@ -114,8 +140,11 @@ main = runNowMaster' $ do
   streamLR <- adjustStream ("#btn-left",subtract 10) ("#btn-right",(+10))
   bhvLR    <- sample $ foldEs (\n f -> f n) 0 streamLR
   -- Zoom
-  streamZ <- adjustStream ("#btn-zoomout", (/1.1)) ("#btn-zoomin",(*1.1))
-  bhvZoom <- sample $ foldEs (\n f -> f n) 1 streamZ
+  streamZ1 <- adjustStream ("#btn-zoomout", (/1.1)) ("#btn-zoomin",(*1.1))
+  streamZ2 <- let trans d | d < 0     = (*1.02)
+                          | otherwise = (/1.02)
+              in fmap trans <$> wheelEventStream "#cnv"
+  bhvZoom <- sample $ foldEs (\n f -> f n) 1 (streamZ1 <> streamZ2)
   --
   actimate (js_set_label "#lab-delta") $ bhvUD
   actimate (js_set_label "#lab-alpha") $ bhvLR
@@ -150,8 +179,11 @@ main = runNowMaster' $ do
   -- Draw
   eLoaded <- sample $ whenJust bhvPlanetarium
   _ <- do cam <- sample bhvCamera
-          let fun p = sync $ duration "sky" $ runCanvas "cnv" $ drawSky (Just p) cam
-          planNow $ fun <$> eLoaded
-  actimateB (\a b -> duration "sky" $ runCanvas "cnv" $ drawSky a b)
+          planNow $ sync . (\p -> putSink drawSink (p,cam)) <$> eLoaded
+  actimateB (\ma b -> case ma of
+               Just a  -> do consoleLog "DRAW!"
+                             putSink drawSink (a,b)
+               Nothing -> return ()
+            )
     bhvPlanetarium bhvCamera
   return ()
