@@ -45,27 +45,27 @@ drawSky (Just pl) (Camera { cameraViewEq   = cam
                     yy = fromIntegral h / 2 - ss * y
                 in (xx,yy)
   -- Draw sky
-  fillStyle "#aaf"
+  fillStyle "#002"
   arc (fromIntegral w/2, fromIntegral h/2) zoomFactor (0,2*pi)
   fill
   -- Draw grid
   beginPath
   lineWidth 0.5
-  strokeStyle "#ccf"
+  strokeStyle "#666"
   duration "grid" $ forM_ (coordGridEq pl) $ \ln -> do
     drawprojLine (fmap scale . proj) ln
   stroke
   -- Draw grid
   beginPath
   lineWidth 0.5
-  strokeStyle "#cfc"
+  strokeStyle "#585"
   duration "grid" $ forM_ (coordGridHor pl) $ \ln -> do
     drawprojLine (fmap scale . projH) ln
   stroke
   -- Draw constellation lines
   beginPath
   lineWidth 1
-  strokeStyle "#448"
+  strokeStyle "#558"
   duration "cline" $ forM_ (clines pl) $ \(CLines cl) -> do
     forM_ cl $ \contour ->
       case sequence $ proj <$> contour of
@@ -75,9 +75,13 @@ drawSky (Just pl) (Camera { cameraViewEq   = cam
   -- Draw stars
   beginPath
   fillStyle "#fff"
-  forM_ (brightStars pl) $ \(p,m) ->
+  duration "stars" $ forM_ (brightStars pl) $ \(p,m) ->
     forM_ (fmap scale $ proj p) $ \(x,y) -> do
-      let r = (6.5 - m) / 1.5
+      let r = (6.5 - m) / 1.8
       moveTo x y
       arc (x,y) r (0,2*pi)
   fill
+  -- -- Draw center
+  -- beginPath
+  -- fillStyle "#f00"
+  -- fillRect (fromIntegral w/2) (fromIntegral h/2) 2 2
