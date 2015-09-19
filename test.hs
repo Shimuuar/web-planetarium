@@ -147,8 +147,6 @@ main = runNowMaster' $ do
     sample $ foldEs (\n f -> f n) 1 (streamZ1 <> streamZ2)
   -- Viewport size
   bhvSize <- innerSizeBehavior "#area"
-  flip actimate bhvSize $ \(w,h) ->
-    runCanvas "cnv" $ resize w h
   -- Location
   let bhvLoc = pure $ Location (angle 55) (angle 37)
   -- Time
@@ -176,6 +174,9 @@ main = runNowMaster' $ do
   actimate (js_set_label "#lab-delta") $ bhvUD
   actimate (js_set_label "#lab-alpha") $ bhvLR
   actimate (js_set_label "#lab-zoom")  $ bhvZoom
+  -- Resize canvas when needed
+  flip actimate bhvSize $ \(w,h) ->
+    runCanvas "cnv" $ resize w h
   -- Draw sky
   eLoaded <- sample $ whenJust bhvPlanetarium
   _ <- do cam <- sample bhvCamera
