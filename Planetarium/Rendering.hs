@@ -77,7 +77,7 @@ drawSky (Just pl) (Camera { cameraViewEq   = cam
   fillStyle "#fff"
   forM_ (brightStars pl) $ \(p,m) ->
     forM_ (fmap scale $ proj p) $ \(x,y) -> do
-      let r = (6 - m) / 1.5
+      let r = (6.5 - m) / 1.5
       moveTo x y
       arc (x,y) r (0,2*pi)
   fill

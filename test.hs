@@ -78,7 +78,7 @@ buildPlanetarium evtCL evtHD
                         , let α = catalogHDra   i
                         , let δ = catalogHDdec  i
                         , let m = catalogHDvisM i
-                        , m < 5
+                        , m < 6
                         ]
         }
 
@@ -119,12 +119,19 @@ main :: IO ()
 main = runNowMaster' $ do
   -- Start rendered thread
   drawCmd <- sync startRendererThread
+
+  ----------------------------------------------------------------
+  -- Planetarium data
+  --
   -- Load data
   evtClines <- loadCLines
   evtHD     <- loadCatalogHD
   -- Build planetarium
   let bhvPlanetarium = buildPlanetarium evtClines evtHD
+
   ----------------------------------------------------------------
+  -- Controls
+  --
   -- Right-left
   bhvUD <- sample . foldEs (\n f -> min 90 $ max (-90) $ f n) 0
        =<< adjustStream ("#btn-down", subtract 10) ("#btn-up",(+10))
@@ -142,33 +149,34 @@ main = runNowMaster' $ do
   bhvSize <- innerSizeBehavior "#area"
   flip actimate bhvSize $ \(w,h) ->
     runCanvas "cnv" $ resize w h
-
-
-  --
-  actimate (js_set_label "#lab-delta") $ bhvUD
-  actimate (js_set_label "#lab-alpha") $ bhvLR
-  actimate (js_set_label "#lab-zoom")  $ bhvZoom
+  -- Location
+  let bhvLoc = pure $ Location (angle 55) (angle 37)
+  -- Time
+  bhvTime <- pure <$> sync currentJD
 
   ----------------------------------------------------------------
   -- Camera
-  let locMoscow = Location (angle 55) (angle 37)
-  jd <- sync currentJD
-  --
-  let lst = meanLST locMoscow jd
   let bhvCamera = do
         a    <- bhvLR
         d    <- bhvUD
-        let cam = lookAtEquatorial (angle a :: Angle Degrees Double)
-                                   (angle d :: Angle Degrees Double)
+        loc  <- bhvLoc
+        jd   <- bhvTime
         zoom <- bhvZoom
         view <- bhvSize
+        let cam = lookAtEquatorial (angle a :: Angle Degrees Double)
+                                   (angle d :: Angle Degrees Double)
+        let lst = meanLST loc jd
         return $ Camera
           { cameraViewEq   = cam
-          , cameraViewHor  = cam <<< horizontalToEquatorial locMoscow lst
+          , cameraViewHor  = cam <<< horizontalToEquatorial loc lst
           , cameraZoom     = zoom
           , cameraViewport = view
           }
-  -- Draw
+  -- Report status of camera
+  actimate (js_set_label "#lab-delta") $ bhvUD
+  actimate (js_set_label "#lab-alpha") $ bhvLR
+  actimate (js_set_label "#lab-zoom")  $ bhvZoom
+  -- Draw sky
   eLoaded <- sample $ whenJust bhvPlanetarium
   _ <- do cam <- sample bhvCamera
           planNow $ sync . (\p -> drawCmd p cam) <$> eLoaded
