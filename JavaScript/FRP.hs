@@ -7,10 +7,13 @@ module JavaScript.FRP (
     runNowMaster'
   , actimate
   , actimateB
+    -- * Input streams
   , onClickStream
   , innerSizeBehavior
   , wheelEventStream
   , streamSelectInput
+    -- ** Compounds
+  , adjustStream
   ) where
 
 import Control.Applicative
@@ -47,6 +50,10 @@ actimateB fun bhvB bhv = do
   b <- sample bhvB
   sync . fun b =<< sample bhv
   callIOStream id $ (fun <$> bhvB) <@@> toChanges bhv
+
+----------------------------------------------------------------
+-- Input streams
+----------------------------------------------------------------
 
 -- | Stream of onclick events
 onClickStream
@@ -103,6 +110,22 @@ streamSelectInput as sel = do
     call $ snd $ as !! read (fromJSString n)
   sync $ jq_event_change sel jsCall
   return stream
+
+
+----------------------------------------------------------------
+-- Compound functions
+----------------------------------------------------------------
+
+adjustStream
+  :: Num aa
+  => (JSString, a -> a)    -- ^ Decrement
+  -> (JSString, a -> a)    -- ^ Increent
+  -> Now (EvStream (a -> a))
+adjustStream (down,funD) (up,funU) = do
+  streamUp   <- onClickStream up
+  streamDown <- onClickStream down
+  return $ (funU <$ streamUp)
+        <> (funD <$ streamDown)
 
 
 ----------------------------------------------------------------

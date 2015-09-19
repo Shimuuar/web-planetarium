@@ -99,19 +99,58 @@ startRendererThread = do
   return $ \pln cam -> putMSink drawSink (pln,cam)
 
 
-adjustStream
-  :: Num aa
-  => (JSString, a -> a)    -- ^ Decrement
-  -> (JSString, a -> a)    -- ^ Increent
-  -> Now (EvStream (a -> a))
-adjustStream (down,funD) (up,funU) = do
-  streamUp   <- onClickStream up
-  streamDown <- onClickStream down
-  return $ (funU <$ streamUp)
-        <> (funD <$ streamDown)
+
+-- | Coordinate system
+data Coords
+  = CEquatorial
+  | CHorizontal
+  deriving (Show,Eq)
+
+-- | Command for changing coordinates
+data PointingCmd
+  = MoveLR Double
+    -- ^ Move in left-right direction
+  | MoveUD Double
+    -- ^ Move in up-down direction
+  | ChangeTo Location JD Coords
+    -- ^
+
+-- | Current pointing
+data Pointing
+  = PEq  Double Double
+  | PHor Double Double
+  deriving (Eq,Show)
 
 
+hor2eq :: Location -> JD -> (Double,Double) -> (Double,Double)
+hor2eq loc jd (a,h)
+  = (getAngle α, getAngle δ)
+  where
+  aa,hh,α,δ :: Angle Degrees Double
+  aa = angle a
+  hh = angle h
+  --
+  p :: Spherical HorizonalCoord Double
+  p = fromSpherical aa hh
+  --
+  lst = meanLST loc jd
+  p' = toCoord (horizontalToEquatorial loc lst) p
+  (α,δ) = toSpherical p'
 
+eq2hor :: Location -> JD -> (Double,Double) -> (Double,Double)
+eq2hor loc jd (α,δ)
+  = (getAngle aa, getAngle hh)
+  where
+  aa,hh,αα,δδ :: Angle Degrees Double
+  αα = angle α
+  δδ = angle δ
+  --
+  p :: Spherical (EquatorialCoord J1900) Double
+  p = fromSpherical αα δδ
+  --
+  lst = meanLST loc jd
+  p' = toCoord (equatorialToHorizontal loc lst) p
+  (aa,hh) = toSpherical p'
 
 
 main :: IO ()
@@ -130,13 +169,8 @@ main = runNowMaster' $ do
 
   ----------------------------------------------------------------
   -- Controls
-  --
-  -- Right-left
-  bhvUD <- sample . foldEs (\n f -> min 90 $ max (-90) $ f n) 0
-       =<< adjustStream ("#btn-down", subtract 10) ("#btn-up",(+10))
-  -- Left-right
-  bhvLR <- sample . foldEs (\n f -> f n) 0
-       =<< adjustStream ("#btn-left",subtract 10) ("#btn-right",(+10))
+  ----------------------------------------------------------------
+
   -- Zoom
   bhvZoom <- do
     streamZ1 <- adjustStream ("#btn-zoomout", (/1.1)) ("#btn-zoomin",(*1.1))
@@ -151,30 +185,70 @@ main = runNowMaster' $ do
   -- Time
   bhvTime <- pure <$> sync currentJD
 
+  ----------------------------------------
+  -- Pointing
+  bhvPoint <- do
+    -- Coordinate system selection
+    evtsCoord <- ((ChangeTo <$> bhvLoc <*> bhvTime) <@@>)
+              <$> streamSelectInput
+      [ ("Eq. coord.",  CEquatorial)
+      , ("Hor. coord.", CHorizontal)
+      ] "#inp-coord"
+    -- Movement
+    evtsMove <- mconcat <$> sequence
+      [ ((MoveUD (-10)) <$) <$> onClickStream "#btn-down"
+      , ((MoveUD   10 ) <$) <$> onClickStream "#btn-up"
+      , ((MoveLR (-10)) <$) <$> onClickStream "#btn-left"
+      , ((MoveLR   10 ) <$) <$> onClickStream "#btn-right"
+      ]
+    let -- Movements
+        step (PEq  a d) (MoveLR dx) = PEq  (a+dx) d
+        step (PEq  a d) (MoveUD dx) = PEq  a (d+dx)
+        step (PHor a d) (MoveLR dx) = PHor (a+dx) d
+        step (PHor a d) (MoveUD dx) = PHor a (d+dx)
+        -- Coordinate system change
+        step x@PEq{}  (ChangeTo _ _ CEquatorial) = x
+        step x@PHor{} (ChangeTo _ _ CHorizontal) = x
+        step (PEq  a d) (ChangeTo loc jd CHorizontal) =
+          uncurry PHor $ eq2hor loc jd (a,d)
+        step (PHor a d) (ChangeTo loc jd CEquatorial) =
+          uncurry PEq $ hor2eq loc jd (a,d)
+    sample $ foldEs step (PEq 0 0)
+           $ evtsCoord <> evtsMove
+
   ----------------------------------------------------------------
   -- Camera
   let bhvCamera = do
-        a    <- bhvLR
-        d    <- bhvUD
+        p    <- bhvPoint
         loc  <- bhvLoc
         jd   <- bhvTime
         zoom <- bhvZoom
         view <- bhvSize
-        let cam = lookAtEquatorial (angle a :: Angle Degrees Double)
-                                   (angle d :: Angle Degrees Double)
+        -- Look camera
         let lst = meanLST loc jd
+        let (camEq,camHor) = case p of
+              PEq  a d ->
+                let cam = lookAtEquatorial
+                            (angle a :: Angle Degrees Double)
+                            (angle d :: Angle Degrees Double)
+                in ( cam
+                   , cam <<< horizontalToEquatorial loc lst)
+              PHor a d ->
+                let cam = lookAtHorizontal
+                            (angle a :: Angle Degrees Double)
+                            (angle d :: Angle Degrees Double)
+                in ( cam <<< equatorialToHorizontal loc lst
+                   , cam )
         return $ Camera
-          { cameraViewEq   = cam
-          , cameraViewHor  = cam <<< horizontalToEquatorial loc lst
+          { cameraViewEq   = camEq
+          , cameraViewHor  = camHor
           , cameraZoom     = zoom
           , cameraViewport = view
           }
 
-  sss <- streamSelectInput [("aaa",1),("bbb",10),("ccc",100)] "#inp-coord"
-  actimate (consoleLog . show) =<< sample (fromChanges 0 sss)
   -- Report status of camera
-  actimate (js_set_label "#lab-delta") $ bhvUD
-  actimate (js_set_label "#lab-alpha") $ bhvLR
+  -- actimate (js_set_label "#lab-delta") $ bhvUD
+  -- actimate (js_set_label "#lab-alpha") $ bhvLR
   actimate (js_set_label "#lab-zoom")  $ bhvZoom
   -- Resize canvas when needed
   flip actimate bhvSize $ \(w,h) ->
