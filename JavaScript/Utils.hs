@@ -24,9 +24,11 @@ import GHCJS.Marshal
 -- JS helpers
 ----------------------------------------------------------------
 
+-- | Write string to console
 consoleLog :: String -> IO ()
 consoleLog = js_console_log . toJSString
 
+-- | Write duration of action to console
 duration :: MonadIO m => String -> m a -> m a
 duration msg io = do
   t1 <- liftIO js_date_now
