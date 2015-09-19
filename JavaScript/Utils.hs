@@ -5,6 +5,9 @@ module JavaScript.Utils (
     -- * Javascript
     consoleLog
   , duration
+    -- * FRP utils
+  , fetchJSON
+  , fetchText
     -- * Concurrency
   , MSink
   , newMSink
@@ -15,6 +18,9 @@ module JavaScript.Utils (
 import Control.Applicative
 import Control.Concurrent
 import Control.Monad.IO.Class
+import Control.FRPNow
+import Data.Aeson
+import qualified Data.Text as T
 import GHCJS.Types
 import GHCJS.Foreign
 import GHCJS.Marshal
@@ -44,7 +50,37 @@ foreign import javascript safe "Date.now()"
   js_date_now :: IO Double
 
 
+----------------------------------------------------------------
+-- FRP utils
+----------------------------------------------------------------
 
+-- | Fetch JSON object from URL
+fetchJSON :: FromJSON a => String -> Now (Event (Maybe a))
+fetchJSON url = do
+  (ea,cb) <- callback
+  jfun <- sync $ syncCallback1 NeverRetain True $ \val -> do
+    Just a <- fromJSRef val
+    cb $ case fromJSON a of
+           Success a -> Just a
+           _         -> Nothing
+  sync $ jq_fetch_json (toJSString url) jfun
+  return ea
+
+-- | Fetch text from URL
+fetchText :: String -> Now (Event T.Text)
+fetchText url = do
+  (ea,cb) <- callback
+  jfun <- sync $ syncCallback1 NeverRetain True $ \val -> do
+    cb $ fromJSString val
+  sync $ jq_fetch_text (toJSString url) jfun
+  return ea
+
+
+foreign import javascript safe "$.ajax({dataType:'json', url:$1, success:$2})"
+  jq_fetch_json :: JSString -> JSFun (JSRef Value -> IO ()) -> IO ()
+
+foreign import javascript safe "$.ajax({dataType:'text', url:$1, success:$2})"
+  jq_fetch_text :: JSString -> JSFun (JSString -> IO ()) -> IO ()
 
 ----------------------------------------------------------------
 -- Concurrency

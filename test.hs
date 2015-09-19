@@ -32,7 +32,6 @@ import Celestial.Geo
 import Celestial.Time
 
 import Web.FRP
-import Web.JQ
 import JavaScript.Canvas
 import JavaScript.Utils
 
