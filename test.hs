@@ -169,6 +169,9 @@ main = runNowMaster' $ do
           , cameraZoom     = zoom
           , cameraViewport = view
           }
+
+  sss <- streamSelectInput [("aaa",1),("bbb",10),("ccc",100)] "#inp-coord"
+  actimate (consoleLog . show) =<< sample (fromChanges 0 sss)
   -- Report status of camera
   actimate (js_set_label "#lab-delta") $ bhvUD
   actimate (js_set_label "#lab-alpha") $ bhvLR
