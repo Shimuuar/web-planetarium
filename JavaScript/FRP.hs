@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- |
 -- FRP helpers for writing code
-module Web.FRP (
+module JavaScript.FRP (
     -- * FRP
     runNowMaster'
   , actimate
@@ -17,12 +17,10 @@ import Control.Monad
 import Control.FRPNow
 import Control.Concurrent (threadDelay)
 
-import Data.String
 import GHCJS.Types
 import GHCJS.Foreign
 import GHCJS.Marshal
 
-import JavaScript.Utils
 
 
 ----------------------------------------------------------------

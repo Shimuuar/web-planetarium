@@ -31,7 +31,7 @@ import Celestial.Catalog
 import Celestial.Geo
 import Celestial.Time
 
-import Web.FRP
+import JavaScript.FRP
 import JavaScript.Canvas
 import JavaScript.Utils
 

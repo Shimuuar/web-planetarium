@@ -31,7 +31,7 @@ import GHCJS.Marshal
 
 import Celestial.Coordinates
 
-import Web.JQ
+import JavaScript.Utils
 
 
 
