@@ -29,15 +29,19 @@ import Prelude hiding (sequence)
 -- | Render planetarium on canvas
 drawSky :: Maybe Planetarium -> Camera -> Canvas ()
 drawSky Nothing _ = return ()
-drawSky (Just pl) (Camera { cameraViewEq   = cam
-                          , cameraViewHor  = camHor
-                          , cameraZoom     = zoom
-                          , cameraViewport = (w,h)
+drawSky (Just pl) (Camera { cameraViewEq     = cam
+                          , cameraViewHor    = camHor
+                          , cameraZoom       = zoom
+                          , cameraViewport   = (w,h)
+                          , cameraProjection = prj
                           }) = do
   -- Start drawing
   clear
-  let proj  = project orthographic . toCoord cam
-      projH = project orthographic . toCoord camHor
+  let projector = case prj of
+        ProjOrthographic -> orthographic
+        ProjSterographic -> stereographic
+      proj  = project projector . toCoord cam
+      projH = project projector . toCoord camHor
       zoomFactor = zoom * fromIntegral (min w h) / 2.2
       scale p = let (x,y) = F.convert p
                     ss = zoomFactor
@@ -46,8 +50,12 @@ drawSky (Just pl) (Camera { cameraViewEq   = cam
                 in (xx,yy)
   -- Draw sky
   fillStyle "#002"
-  arc (fromIntegral w/2, fromIntegral h/2) zoomFactor (0,2*pi)
-  fill
+  case maxR projector of
+    Just r -> do
+      arc (fromIntegral w/2, fromIntegral h/2) (r*zoomFactor) (0,2*pi)
+      fill
+    Nothing -> do
+      fillRect 0 0 (fromIntegral w) (fromIntegral h)
   -- Draw grid
   beginPath
   lineWidth 0.5

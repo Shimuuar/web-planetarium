@@ -41,7 +41,7 @@ import JavaScript.Utils
 
 -- | Constellations lines for one constellation.
 newtype CLines = CLines
-  { getCLines :: V.Vector (V.Vector (Spherical (EquatorialCoord J1900) Double)) }
+  { getCLines :: V.Vector (V.Vector (Spherical (EquatorialCoord B1900) Double)) }
 
 type CLineSet = HM.HashMap T.Text CLines
 

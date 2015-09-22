@@ -145,7 +145,7 @@ eq2hor loc jd (α,δ)
   αα = angle α
   δδ = angle δ
   --
-  p :: Spherical (EquatorialCoord J1900) Double
+  p :: Spherical (EquatorialCoord B1900) Double
   p = fromSpherical αα δδ
   --
   lst = meanLST loc jd
@@ -184,6 +184,12 @@ main = runNowMaster' $ do
   let bhvLoc = pure $ Location (angle 55) (angle 37)
   -- Time
   bhvTime <- pure <$> sync currentJD
+  -- Projection
+  bhvProj <- do
+    evts <- streamSelectInput [ ("Orthographic", ProjOrthographic)
+                              , ("Stereographic", ProjSterographic)
+                              ] "#inp-proj"
+    sample $ fromChanges ProjOrthographic evts
 
   ----------------------------------------
   -- Pointing
@@ -224,26 +230,28 @@ main = runNowMaster' $ do
         jd   <- bhvTime
         zoom <- bhvZoom
         view <- bhvSize
+        prj  <- bhvProj
         -- Look camera
         let lst = meanLST loc jd
         let (camEq,camHor) = case p of
               PEq  a d ->
-                let cam = lookAtEquatorial
+                let cam = lookAt
                             (angle a :: Angle Degrees Double)
                             (angle d :: Angle Degrees Double)
                 in ( cam
                    , cam <<< horizontalToEquatorial loc lst)
               PHor a d ->
-                let cam = lookAtHorizontal
+                let cam = lookAt
                             (angle a :: Angle Degrees Double)
                             (angle d :: Angle Degrees Double)
                 in ( cam <<< equatorialToHorizontal loc lst
                    , cam )
         return $ Camera
-          { cameraViewEq   = camEq
-          , cameraViewHor  = camHor
-          , cameraZoom     = zoom
-          , cameraViewport = view
+          { cameraViewEq     = camEq
+          , cameraViewHor    = camHor
+          , cameraZoom       = zoom
+          , cameraViewport   = view
+          , cameraProjection = prj
           }
 
   -- Report status of camera

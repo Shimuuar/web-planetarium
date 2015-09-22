@@ -14,11 +14,11 @@ import Planetarium.Catalogs
 data Planetarium = Planetarium
   { clines       :: CLineSet
     -- ^ List of constellation lines
-  , coordGridEq  :: [[Spherical (EquatorialCoord J1900) Double]]
+  , coordGridEq  :: [[Spherical (EquatorialCoord B1900) Double]]
     -- ^ Coordinate grid
   , coordGridHor :: [[Spherical HorizonalCoord Double]]
     -- ^ Coordinate grid
-  , brightStars  :: [(Spherical (EquatorialCoord J1900) Double,Double)]
+  , brightStars  :: [(Spherical (EquatorialCoord B1900) Double,Double)]
     -- ^ List of bright stars (brighter than 5m)
   }
 

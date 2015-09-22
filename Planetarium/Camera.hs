@@ -17,9 +17,14 @@ data CoordSystem
   = CoordEquatorial
   | CoordHorizontal
 
+data ProjType
+  = ProjOrthographic
+  | ProjSterographic
+  deriving (Show,Eq)
+
 -- | Description of current camera
 data Camera = Camera
-  { cameraViewEq   :: CoordTransform Double (EquatorialCoord J1900) Proj
+  { cameraViewEq   :: CoordTransform Double (EquatorialCoord B1900) Proj
     -- ^ Coordinate transform from equatorial to projection coordinates
   , cameraViewHor  :: CoordTransform Double  HorizonalCoord         Proj
     -- ^ Coordinate transform from horizontal to projection coordinates
@@ -27,5 +32,6 @@ data Camera = Camera
     -- ^ Zoom for camera
   , cameraViewport :: (Int,Int)
     -- ^ Size of camera viewport
+  , cameraProjection :: ProjType
   }
   deriving (Show,Eq)
