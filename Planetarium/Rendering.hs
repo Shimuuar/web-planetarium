@@ -37,9 +37,7 @@ drawSky (Just pl) (Camera { cameraViewEq     = cam
                           }) = do
   -- Start drawing
   clear
-  let projector = case prj of
-        ProjOrthographic -> orthographic
-        ProjSterographic -> stereographic
+  let projector = toProjection prj
       proj  = project projector . toCoord cam
       projH = project projector . toCoord camHor
       zoomFactor = zoom * fromIntegral (min w h) / 2.2

@@ -21,6 +21,7 @@ import Control.Applicative
 import Control.FRPNow
 
 import Data.Angle
+import Data.Maybe
 import qualified Data.Text           as T
 import qualified Data.Vector         as V
 import qualified Data.HashMap.Strict as HM
@@ -28,6 +29,7 @@ import qualified Data.HashMap.Strict as HM
 import GHCJS.Types
 import GHCJS.Foreign
 import GHCJS.Marshal
+import System.IO.Unsafe (unsafePerformIO)
 
 import Celestial.Coordinates
 
@@ -48,11 +50,17 @@ type CLineSet = HM.HashMap T.Text CLines
 -- | Load constellation lines
 loadCLines :: Now (Event (Maybe CLineSet))
 loadCLines
+  -- = undefined
   = (fmap . fmap . fmap) (CLines . (V.map . V.map) make)
- <$> fetchJSON "data/clines.json"
+ <$> fetchJSON "data/constellation-lines-coord.json"
   where
-    make i = fromSpherical (catalogHDra i) (catalogHDdec i)
-               
+    make (a,d) = fromSpherical (angle a :: Angle HourRA  Double)
+                               (angle d :: Angle Degrees Double)
+ --    makeLine v = V.mapM make v
+                 
+ --    make i = do α <- catalogHDra  i
+ --                δ <- catalogHDdec i
+ --                fromSpherical α δ
 
 ----------------------------------------------------------------
 -- Catalog access
@@ -72,16 +80,23 @@ loadCatalogHD = do
 foreign import javascript safe "load_catalogHD($1)"
   js_load_catalogHD :: JSFun (IO ()) -> IO ()
 
-catalogHDra :: Int -> Angle HourRA Double
-catalogHDra = angle . js_catalogHDra
+catalogHDra :: Int -> Maybe (Angle HourRA Double)
+catalogHDra n = unsafePerformIO $ do
+  ma <- fromJSRef $ js_catalogHDra n
+  return $ fmap angle ma
 
-catalogHDdec :: Int -> Angle Degrees Double
-catalogHDdec = angle . js_catalogHDdec
+catalogHDdec :: Int -> Maybe (Angle Degrees Double)
+catalogHDdec n = unsafePerformIO $ do
+  ma <- fromJSRef $ js_catalogHDdec n
+  return $ fmap angle ma
+
+catalogHDvisM :: Int -> Maybe Double
+catalogHDvisM = unsafePerformIO . fromJSRef . js_catalogHDvisM
 
 foreign import javascript safe "catalogHD.ra[$1]"
-  js_catalogHDra  :: Int -> Double
+  js_catalogHDra  :: Int -> JSRef Double
 foreign import javascript safe "catalogHD.dec[$1]"
-  js_catalogHDdec :: Int -> Double
+  js_catalogHDdec :: Int -> JSRef Double
 foreign import javascript safe "catalogHD.m[$1]"
-  catalogHDvisM :: Int -> Double
+  js_catalogHDvisM :: Int -> JSRef Double
 

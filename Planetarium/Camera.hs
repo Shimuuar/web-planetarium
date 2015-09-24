@@ -20,7 +20,14 @@ data CoordSystem
 data ProjType
   = ProjOrthographic
   | ProjSterographic
+  | ProjGnomonic
   deriving (Show,Eq)
+
+toProjection :: ProjType -> Projection Double
+toProjection prj = case prj of
+  ProjOrthographic -> orthographic
+  ProjSterographic -> stereographic
+  ProjGnomonic     -> gnomonic
 
 -- | Description of current camera
 data Camera = Camera

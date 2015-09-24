@@ -62,7 +62,9 @@ buildPlanetarium
   -> Event ()               -- ^ Load HD catalog
   -> Behavior (Maybe Planetarium)
 buildPlanetarium evtCL evtHD
-  = make <$> (pure Nothing `switch` (pure        <$> evtCL))
+  = make <$>
+    -- (pure (Just mempty))
+    (pure Nothing `switch` (pure        <$> evtCL))
          <*> (pure Nothing `switch` (pure . Just <$> evtHD))
   where
     make mCL mHD = do
@@ -74,9 +76,9 @@ buildPlanetarium evtCL evtHD
         , coordGridHor = simpleCoordGrid
         , brightStars = [ (fromSpherical α δ, m)
                         | i <- [1 .. 272150]
-                        , let α = catalogHDra   i
-                        , let δ = catalogHDdec  i
-                        , let m = catalogHDvisM i
+                        , Just α <- [catalogHDra   i]
+                        , Just δ <- [catalogHDdec  i]
+                        , Just m <- [catalogHDvisM i]
                         , m < 6
                         ]
         }
@@ -186,8 +188,9 @@ main = runNowMaster' $ do
   bhvTime <- pure <$> sync currentJD
   -- Projection
   bhvProj <- do
-    evts <- streamSelectInput [ ("Orthographic", ProjOrthographic)
+    evts <- streamSelectInput [ ("Orthographic" , ProjOrthographic)
                               , ("Stereographic", ProjSterographic)
+                              , ("Gnomonic"     , ProjGnomonic    )
                               ] "#inp-proj"
     sample $ fromChanges ProjOrthographic evts
 
