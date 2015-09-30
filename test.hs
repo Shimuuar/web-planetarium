@@ -260,7 +260,7 @@ main = runNowMaster' $ do
   -- Report status of camera
   -- actimate (js_set_label "#lab-delta") $ bhvUD
   -- actimate (js_set_label "#lab-alpha") $ bhvLR
-  actimate (js_set_label "#lab-zoom")  $ bhvZoom
+  actimate (consoleLog . show)  $ bhvZoom
   -- Resize canvas when needed
   flip actimate bhvSize $ \(w,h) ->
     runCanvas "cnv" $ resize w h

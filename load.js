@@ -1,4 +1,9 @@
 
+$(function(){
+    $('#inp-datetime').datetimepicker()
+})
+
+// Global variable holding part of HD catalog
 var catalogHD = {
     ra  : [0.0/0.0],
     dec : [0.0/0.0],
@@ -8,7 +13,6 @@ var catalogHD = {
 // Load HD catalog
 function load_catalogHD(callback) {
     $.ajax({
-//	url      : 'data/catalog.dat',
 	url      : 'data/HD-6m.dat',
 	dataType : 'text',
 	success  : function(resp) {

@@ -2,10 +2,14 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <!-- CSS -->
     <link rel="stylesheet" type="text/css"
 	  href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="css.css">
-    <script language="javascript" src="jquery-2.1.4.js"></script>
+    <link rel="stylesheet" type="text/css" href="js/jquery.datetimepicker.css">
+    <!-- JS -->
+    <script language="javascript" src="js/jquery-2.1.4.js"></script>
+    <script language="javascript" src="js/jquery.datetimepicker.full.min.js"></script>
     <script language="javascript" src="dist/build/test/test.jsexe/rts.js"></script>
     <script language="javascript" src="dist/build/test/test.jsexe/lib.js"></script>
     <script language="javascript" src="dist/build/test/test.jsexe/out.js"></script>
@@ -13,7 +17,7 @@
   </head>
 <body>
   <div id="area" class="pln-container">
-    <canvas id="cnv" style="border: 1px solid green;">
+    <canvas id="cnv">
     </canvas>
     <!-- overlay for controls -->
     <div class="pln-overlay">
@@ -48,6 +52,8 @@
 	  <td></td>
 	  <td></td>
 	</tr>
+      </table>
+      <table class="pln-controls">
 	<tr>
 	  <td colspan="4">
 	    <select class="form-control pln-button" id="inp-coord">
@@ -60,13 +66,34 @@
 	    </select>
 	  </td>
 	</tr>
+	<!-- date/time -->
+	<tr>
+	  <td colspan="4">
+	    <input id="inp-datetime" class="form-control pln-button" type="text">
+	  </td>
+	</tr>
+	<!-- Lat/long -->
+	<tr>
+	  <td>
+	    <label class="pln-button">Lat:</label>
+	  </td>
+	  <td colspan="3">
+	    <input class="form-control pln-button" id="inp-lat" type="text">
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <label class="pln-button">Long:</label>
+	  </td>
+	  <td colspan="3">
+	    <input class="form-control pln-button" id="inp-long" type="text">
+	  </td>
+	</tr>
       </table>
     </div>
+    <div class="pln-right-overlay">
+    </div>
   </div>
-  <!-- ---------------------------------------------------------------- -->
-  α = <label id="lab-alpha"></label>°<br>
-  δ = <label id="lab-delta"></label>°<br>
-  Z = <label id="lab-zoom"></label><br>
 </body>
 <script language="javascript" src="dist/build/test/test.jsexe/runmain.js" defer></script>
 </html>
