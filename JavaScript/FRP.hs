@@ -11,6 +11,7 @@ module JavaScript.FRP (
   , onClickStream
   , innerSizeBehavior
   , wheelEventStream
+  , numberStream
   , streamSelectInput
     -- ** Compounds
   , adjustStream
@@ -112,6 +113,20 @@ streamSelectInput as sel = do
   return stream
 
 
+numberStream :: JSString -> Double -> (Double,Double) -> Now (EvStream Double, Behavior Double)
+numberStream sel x0 (minX,maxX) = do
+  (stream,call) <- callbackStream
+  -- Callbacks
+  jsCall <- sync $ syncCallback1 AlwaysRetain True $ \xRef -> do
+    Just x <- fromJSRef xRef
+    call x
+  -- Bind handler
+  sync $ js_evts_numeric sel jsCall minX maxX x0
+  bhv <- sample $ fromChanges x0 stream
+  return (stream, bhv)
+
+
+
 ----------------------------------------------------------------
 -- Compound functions
 ----------------------------------------------------------------
@@ -158,3 +173,8 @@ foreign import javascript safe
 
 foreign import javascript safe "$( $1 ).append('<option value=\"'+$2+'\">'+$3+'</option>')"
   jq_append_option :: JSString -> Int -> JSString -> IO ()
+
+foreign import javascript safe "evts_numeric($1,$2,$3,$4,$5)"
+  js_evts_numeric :: JSString
+                  -> JSFun (JSRef Double -> IO ())
+                  -> Double -> Double -> Double -> IO ()

@@ -183,7 +183,10 @@ main = runNowMaster' $ do
   -- Viewport size
   bhvSize <- innerSizeBehavior "#area"
   -- Location
-  let bhvLoc = pure $ Location (angle 55) (angle 37)
+  bhvLoc <- do
+    (_,bhvLat)  <- numberStream "#inp-lat"  55 ( -90,  90)
+    (_,bhvLong) <- numberStream "#inp-long" 37 (-180, 180)
+    return $ Location <$> (angle <$> bhvLat) <*> (angle <$> bhvLong)
   -- Time
   bhvTime <- pure <$> sync currentJD
   -- Projection
@@ -193,6 +196,7 @@ main = runNowMaster' $ do
                               , ("Gnomonic"     , ProjGnomonic    )
                               ] "#inp-proj"
     sample $ fromChanges ProjOrthographic evts
+  -- Location
 
   ----------------------------------------
   -- Pointing

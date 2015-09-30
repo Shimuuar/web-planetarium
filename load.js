@@ -1,7 +1,33 @@
-
+// initialize UI etc
 $(function(){
     $('#inp-datetime').datetimepicker()
 })
+
+// Add handler for numeric input
+//  * selector - JQuery selector for 
+//  * callback - callback
+//  * x0       - initial value
+function evts_numeric(selector, callback, minX, maxX, x0) {
+    var e    = $(selector);
+    var oldX = x0;
+    e.val(x0);
+    e.change(function(){
+	// FIXME: validate better
+	var newX = parseFloat(e.val())
+	if( isNaN(newX) ||  newX<minX || newX>maxX ) {
+	    e.val(oldX);
+	} else {
+	    oldX = newX;
+	    callback(newX);
+	}
+    })
+}
+
+
+
+// ================================================================
+// Catalog handling
+// ================================================================
 
 // Global variable holding part of HD catalog
 var catalogHD = {
