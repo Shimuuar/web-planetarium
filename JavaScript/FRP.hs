@@ -150,7 +150,10 @@ foreign import javascript safe "$( $1 ).innerWidth()"
 foreign import javascript safe "$( $1 ).val()"
   jq_val :: JSString -> IO JSString
 
-foreign import javascript safe "$( $1 ).bind('DOMMouseScroll mousewheel', function(e){$2(e.originalEvent.detail)})"
+foreign import javascript safe
+  "$( $1 ).bind('DOMMouseScroll mousewheel', function(e){\
+  \  var d=e.originalEvent.detail; \
+  \  if(Math.abs(d) > 0.5 ) { $2(d); }})"
   jq_wheel :: JSString -> JSFun (JSRef Double -> IO ()) -> IO ()
 
 foreign import javascript safe "$( $1 ).append('<option value=\"'+$2+'\">'+$3+'</option>')"
