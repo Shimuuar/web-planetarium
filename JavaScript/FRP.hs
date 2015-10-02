@@ -12,6 +12,7 @@ module JavaScript.FRP (
   , innerSizeBehavior
   , wheelEventStream
   , numberStream
+  , streamChange
   , streamSelectInput
     -- ** Compounds
   , adjustStream
@@ -112,6 +113,15 @@ streamSelectInput as sel = do
   sync $ jq_event_change sel jsCall
   return stream
 
+
+streamChange :: JSString -> Now (EvStream JSString)
+streamChange sel = do
+  (stream,call) <- callbackStream
+  jsCall <- sync $ syncCallback AlwaysRetain True $
+    call =<< jq_val sel
+  sync $ jq_event_change sel jsCall
+  return stream
+  
 
 numberStream :: JSString -> Double -> (Double,Double) -> Now (EvStream Double, Behavior Double)
 numberStream sel x0 (minX,maxX) = do

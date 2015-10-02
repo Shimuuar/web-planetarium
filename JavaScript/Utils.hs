@@ -5,6 +5,7 @@ module JavaScript.Utils (
     -- * Javascript
     consoleLog
   , duration
+  , jquerySetVal
     -- * FRP utils
   , fetchJSON
   , fetchText
@@ -43,12 +44,19 @@ duration msg io = do
   liftIO $ consoleLog $ msg ++ ": " ++ show (t2-t1) ++ "ms"
   return a
 
+jquerySetVal :: ToJSString a => JSString -> a -> IO ()
+jquerySetVal sel x = do
+  jq_set_val sel (toJSString x)
+
+
 foreign import javascript safe "console.log($1)"
   js_console_log :: JSString -> IO ()
 
 foreign import javascript safe "Date.now()"
   js_date_now :: IO Double
 
+foreign import javascript safe "$($1).val($2)"
+  jq_set_val :: JSString -> JSString -> IO ()
 
 ----------------------------------------------------------------
 -- FRP utils

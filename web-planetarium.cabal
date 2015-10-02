@@ -30,6 +30,7 @@ Executable test
     ghcjs-base,
     vector,
     time,
+    old-locale,
     fixed-vector,
     unordered-containers,
     my-vectorspace >= 0.3.0,

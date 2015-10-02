@@ -7,37 +7,25 @@
 import Control.Category    ((<<<))
 import Control.Applicative
 import Control.Monad hiding (forM_,sequence)
-import Control.Monad.IO.Class
 import Control.FRPNow
 import Control.Concurrent
 import Control.Exception
-import Data.Aeson
 import Data.Angle
-import Data.Quaternion
 import Data.Monoid
-import Data.String
-import Data.Typeable
-import qualified Data.Vector.Fixed as F
-import qualified Data.Text as T
-import Data.Foldable (forM_)
 import Data.Traversable (sequence)
+import Data.Time     (parseTime,formatTime)
+import System.Locale (defaultTimeLocale)
 import GHCJS.Types
-import GHCJS.Foreign
 import GHCJS.Marshal
+import GHCJS.Foreign
 
-import Celestial.Projection
 import Celestial.Coordinates
-import Celestial.Catalog
 import Celestial.Geo
 import Celestial.Time
 
 import JavaScript.FRP
 import JavaScript.Canvas
 import JavaScript.Utils
-
-import qualified Data.Vector as V
-import qualified Data.Vector.Unboxed as U
-import qualified Data.HashMap.Strict as HM
 
 import Prelude hiding (sequence)
 
@@ -187,8 +175,17 @@ main = runNowMaster' $ do
     (_,bhvLat)  <- numberStream "#inp-lat"  55 ( -90,  90)
     (_,bhvLong) <- numberStream "#inp-long" 37 (-180, 180)
     return $ Location <$> (angle <$> bhvLat) <*> (angle <$> bhvLong)
-  -- Time
-  bhvTime <- pure <$> sync currentJD
+  -- Time  
+  bhvTime <- do
+    let fmt = "%Y/%m/%d %H:%M"
+    jd <- sync currentJD
+    --
+    sync $ jquerySetVal "#inp-datetime" $ formatTime defaultTimeLocale fmt $ jd2UTC jd
+    evts <- streamChange "#inp-datetime"
+    sample $ fromChanges jd
+           $ fmap utc2JD
+           $ catMaybesEs
+           $ parseTime defaultTimeLocale fmt . fromJSString <$> evts
   -- Projection
   bhvProj <- do
     evts <- streamSelectInput [ ("Orthographic" , ProjOrthographic)
