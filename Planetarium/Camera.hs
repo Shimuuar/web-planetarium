@@ -21,13 +21,15 @@ data ProjType
   = ProjOrthographic
   | ProjSterographic
   | ProjGnomonic
+  | ProjAzimuthalEquidistant
   deriving (Show,Eq)
 
 toProjection :: ProjType -> Projection Double
 toProjection prj = case prj of
-  ProjOrthographic -> orthographic
-  ProjSterographic -> stereographic
-  ProjGnomonic     -> gnomonic
+  ProjOrthographic         -> orthographic
+  ProjSterographic         -> stereographic
+  ProjGnomonic             -> gnomonic
+  ProjAzimuthalEquidistant -> azimuthalEquidistant
 
 -- | Description of current camera
 data Camera = Camera

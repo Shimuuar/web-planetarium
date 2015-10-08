@@ -191,6 +191,7 @@ main = runNowMaster' $ do
     evts <- streamSelectInput [ ("Orthographic" , ProjOrthographic)
                               , ("Stereographic", ProjSterographic)
                               , ("Gnomonic"     , ProjGnomonic    )
+                              , ("Az. equidistant", ProjAzimuthalEquidistant)
                               ] "#inp-proj"
     sample $ fromChanges ProjOrthographic evts
   -- Location
