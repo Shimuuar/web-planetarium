@@ -192,6 +192,7 @@ main = runNowMaster' $ do
                               , ("Stereographic", ProjSterographic)
                               , ("Gnomonic"     , ProjGnomonic    )
                               , ("Az. equidistant", ProjAzimuthalEquidistant)
+                              , ("Az. eual area"  , ProjAzimuthalEqArea)
                               ] "#inp-proj"
     sample $ fromChanges ProjOrthographic evts
   -- Location
